@@ -1,0 +1,3210 @@
+Общее описание: web ui для подбора земельных участков выставленных на torgi.gov.ru (ГИС ТОРГИ), их анализа и выгрузки данных в yougile crm.
+Основной стек: Laravel, Sqlite.
+
+
+Нужно одностраничное веб-приложение, для отображения данных из разных ресурсов на одной странице:
+Источник основных данных:
+
+Пример GET запроса
+
+https://torgi.gov.ru/new/api/public/lotcards/search?biddType=ZK&priceMinFrom=1&priceMinTo=2300000&lotStatus=PUBLISHED,APPLICATIONS_SUBMISSION&pubFrom=2026-08-18&pubTo=2026-08-19&catCode=301&matchPhrase=false&typeTransaction=sale&byFirstVersion=true&withFacets=true&page=2&size=10&sort=firstVersionPublicationDate,desc
+
+Где:
+
+biddType ZK (жестко задан в коде, нет в интерфейсе)
+priceMinFrom - начальная цена (вывести в ui, числовое поле от 0, по умолчанию 1)
+priceMinTo - конечная цена (по умолчанию 2300000)
+lotStatus - жестко в коде без ui
+pubFro дата публикации от - сделать датапикер (по умолчанию текущая дата)
+pubTo дата публикации до - сделать датапикер (по умолчанию текущая дата) (без возможности выбрать дату больше текущей)
+catCode служебное значение
+matchPhrase служебное значение
+typeTransaction жестко задано без ui
+byFirstVersion жестко задано без ui
+withFacets жестко задано без ui
+page - номер загруженной страницы (будет меняться по ходу парсинга)
+size кол-во элементов, больше 10 не возвращает, поэтому всегда 10, служебное значение жестко задано без ui
+sort жестко задано без ui
+
+---
+
+#Пример ответа сервера (по 10 элементов за раз (больше не позволяет ресурс) + служебная информация):
+
+
+
+
+
+{
+    "content": [
+        {
+            "id": "22000062030000003021_1",
+            "noticeNumber": "22000062030000003021",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "Земельный участок (право собственности) с кадастровым номером 35:24:0101001:2204",
+            "lotDescription": "Земельный участок с кадастровым номером 35:24:0101001:2204, площадью 686 кв.м, категория земель - земли населенных пунктов, разрешенное использование: для индивидуального жилищного строительства (2.1) местоположение: Российская Федерация, Вологодская область, городской округ город Вологда, город Вологда, проезд 4-ый Стрелецкий, земельный участок 12",
+            "priceMin": 344385.72,
+            "priceMinExact": "344385.72",
+            "biddEndTime": "2026-09-08T05:00:00.000+00:00",
+            "lotImages": [
+                "6a859ce5ac85246d2d828fee"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.1",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.1",
+                            "name": "Для индивидуального жилищного строительства",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "35:24:0101001:2204",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "686.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_SBAST",
+            "subjectRFCode": "35",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T12:11:57.186+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "Указано в извещении о проведении аукциона  ",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "Указано в извещении о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Указано в извещении о проведении аукциона",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Указано в извещении о проведении аукциона",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "value": "Указано в извещении о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "Указано в извещении о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "Указано в извещении о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T12:14:48.201Z",
+            "lotVat": {
+                "code": "notAssessedVAT",
+                "name": "НДС не облагается"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "22000026580000000101_1",
+            "noticeNumber": "22000026580000000101",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "Право заключения договора аренды земельного участка по адресу: Ивановская область, г. Юрьевец, ул. Гоголя, дом № 11",
+            "lotDescription": "Право заключения договора аренды земельного участка по адресу: Ивановская область, г. Юрьевец, ул. Гоголя, дом № 11",
+            "priceMin": 75456.00,
+            "priceMinExact": "75456.00",
+            "biddEndTime": "2026-09-17T21:00:00.000+00:00",
+            "lotImages": [
+                "6a859a2bac85246d2d828b6a"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.1",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.1",
+                            "name": "Для индивидуального жилищного строительства",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "37:22:010208:22",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "964.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.1",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.1",
+                            "name": "Для индивидуального жилищного строительства",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "residential",
+                            "selectNsi": "territorialZones",
+                            "code": "residential",
+                            "name": "Жилая",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_EETP",
+            "subjectRFCode": "37",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T12:00:31.796+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "договор купли-продажи земельного участка",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "Ограничений в использовании Участка не имеется.",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "согласно ГПЗУ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Согласно ГПЗУ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "value": "Согласно ГПЗУ",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "согласно аукционной документации",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "согласно аукционной документации",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T12:01:27.702Z",
+            "lotVat": {
+                "code": "excludingVAT",
+                "name": "Без учета НДС"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "21000022600000000120_4",
+            "noticeNumber": "21000022600000000120",
+            "lotNumber": 4,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "Земельный участок, категория земель: «Земли населенных пунктов», разрешенное использование: «Садоводство», общая площадь 339 кв.м, кадастровый номер 16:51:010101:1671, расположенный по адресу: Республика Татарстан, Лениногорский муниципальный район,  г.Лениногорск, ул.Никишина",
+            "lotDescription": "Земельный участок, категория земель: «Земли населенных пунктов», разрешенное использование: «Садоводство», общая площадь 339 кв.м, кадастровый номер 16:51:010101:1671, расположенный по адресу: Республика Татарстан, Лениногорский муниципальный район,  г.Лениногорск, ул.Никишина",
+            "priceMin": 273400.00,
+            "priceMinExact": "273400.00",
+            "biddEndTime": "2026-09-07T21:00:00.000+00:00",
+            "lotImages": [
+                "6a82cb8c8df4bd68b458b26f"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.0",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.0",
+                            "name": "Жилая застройка",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "16:51:010101:1671",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "339.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_AVK",
+            "subjectRFCode": "16",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-17T08:21:42.046+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "смотреть извещение",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "ограничения отсутствуют ",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "смотрть извещение",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "Инструкция по перечислению задатка для участия в торгах и порядок возврата задатка размещена в разделе «Документы» см. «Инструкция участника».\nДанное сообщение является публичной офертой для заключения договора о задатке в соответствии со ст. 437 ГК РФ, а подача претендентом заявки и перечисление задатка являются акцептом такой оферты, после чего договор о задатке считается заключенным в письменной форме.  \nЗадаток, внесенный победителем аукциона, засчитывается в счет арендной платы ",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "смотреть извещение ",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T11:58:18.367Z",
+            "lotVat": {
+                "code": "excludingVAT",
+                "name": "Без учета НДС"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "22000026580000000100_1",
+            "noticeNumber": "22000026580000000100",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "Земельный участок по адресу: Ивановская область, г. Юрьевец, пл. Минина, дом № 16",
+            "lotDescription": "Земельный участок по адресу: Ивановская область, г. Юрьевец, пл. Минина, дом № 16",
+            "priceMin": 319795.00,
+            "priceMinExact": "319795.00",
+            "biddEndTime": "2026-09-17T21:00:00.000+00:00",
+            "lotImages": [
+                "6a85972e63124f3d8ea33674"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.1",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.1",
+                            "name": "Для индивидуального жилищного строительства",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "37:22:010309:77",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "567.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.1",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.1",
+                            "name": "Для индивидуального жилищного строительства",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "residential",
+                            "selectNsi": "territorialZones",
+                            "code": "residential",
+                            "name": "Жилая",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_EETP",
+            "subjectRFCode": "37",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T11:49:39.639+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "договор купли-продажи земельного участка",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "Ограничений в использовании Участка не имеется",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "согласно ГПЗУ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Согласно ГПЗУ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "value": "Согласно ГПЗУ",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "согласно аукционной документации",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "согласно аукционной документации",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T11:50:20.237Z",
+            "lotVat": {
+                "code": "excludingVAT",
+                "name": "Без учета НДС"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "21000004710000027330_1",
+            "noticeNumber": "21000004710000027330",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "Аукцион в отношении земельного участка с КН 50:19:0030418:528",
+            "lotDescription": "Аукцион в отношении земельного участка с КН 50:19:0030418:528",
+            "priceMin": 751296.21,
+            "priceMinExact": "751296.21",
+            "biddEndTime": "2026-09-07T15:00:00.000+00:00",
+            "lotImages": [
+                "6a858ef863124f3d8ea324b8"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": "1389.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "characteristicValue": "50:19:0030418:528",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.2",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.2",
+                            "name": "Для ведения личного подсобного хозяйства (приусадебный земельный участок)",
+                            "actual": true
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_RTS",
+            "subjectRFCode": "50",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T11:12:27.109+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "Согласно Извещению о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "Согласно Извещению о проведении аукциона",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Согласно извещению о проведении аукциона",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Согласно извещению о проведении аукциона",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "value": "Согласно извещению о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "Согласно Извещению о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "Согласно Извещению о проведении аукциона",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T11:42:18.376Z",
+            "lotVat": {
+                "code": "notAssessedVAT",
+                "name": "НДС не облагается"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "22000026580000000099_1",
+            "noticeNumber": "22000026580000000099",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "аукцион в электронной форме по продаже земельных участков и права заключения договора аренды  государственная собственность на которые не разграничена",
+            "lotDescription": "Земельный участок по адресу: Ивановская область, Юрьевецкий район, дер. Петушиха, земельный участок 10-а,  площадью 500  кв.м., с кадастровым номером 37:22:000000:571, категории «земли населенных пунктов», для ведения личного подсобного хозяйства",
+            "priceMin": 198395.00,
+            "priceMinExact": "198395.00",
+            "biddEndTime": "2026-09-17T21:00:00.000+00:00",
+            "lotImages": [
+                "6a858f80efd603213f10d520"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.2",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.2",
+                            "name": "Для ведения личного подсобного хозяйства (приусадебный земельный участок)",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "37:22:000000:571",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "500.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.2",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.2",
+                            "name": "Для ведения личного подсобного хозяйства (приусадебный земельный участок)",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "residential",
+                            "selectNsi": "territorialZones",
+                            "code": "residential",
+                            "name": "Жилая",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_EETP",
+            "subjectRFCode": "37",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T11:33:42.476+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "договор купли-продажи",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "На Участок распространяются ограничения, предусмотренные Водным кодексом РФ от 03.06.2006 г. № 74-ФЗ.",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "согласно ГПЗУ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Согласно ГПЗУ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "value": "Согласно ГПЗУ",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "согласно аукционной документации",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "согласно аукционной документации",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T11:35:24.939Z",
+            "lotVat": {
+                "code": "excludingVAT",
+                "name": "Без учета НДС"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "26000001390000000073_1",
+            "noticeNumber": "26000001390000000073",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "продажа земельного участка с кадастровым номером 62:21:0020401:470",
+            "lotDescription": "продажа земельного участка с кадастровым номером 62:21:0020401:470",
+            "priceMin": 249954.50,
+            "priceMinExact": "249954.50",
+            "biddEndTime": "2026-08-31T20:59:00.000+00:00",
+            "lotImages": [
+                "6a8590c963124f3d8ea328ac"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "62:21:0020401:470",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "4150.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_SBAST",
+            "subjectRFCode": "62",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T11:18:17.361+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "в течение 5 дней после аукциона",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "в извещении",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "в извещении",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T11:18:48.121Z",
+            "lotVat": {
+                "code": "notAssessedVAT",
+                "name": "НДС не облагается"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "26000001390000000072_1",
+            "noticeNumber": "26000001390000000072",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "продажа земельного участка с кадастровым номером 62:21:0060101:6461",
+            "lotDescription": "продажа земельного участка с кадастровым номером 62:21:0060101:6461",
+            "priceMin": 295906.00,
+            "priceMinExact": "295906.00",
+            "biddEndTime": "2026-08-31T20:59:00.000+00:00",
+            "lotImages": [
+                "6a858e84efd603213f10d39c"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.2",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.2",
+                            "name": "Для ведения личного подсобного хозяйства (приусадебный земельный участок)",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "62:21:0060101:6461",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "2600.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_SBAST",
+            "subjectRFCode": "62",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T11:11:44.409+00:00",
+            "timeZoneName": "МСК",
+            "timezoneOffset": "180",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "в течение 5 дней после аукциона",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "в извещении",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "в извещении",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T11:12:22.014Z",
+            "lotVat": {
+                "code": "notAssessedVAT",
+                "name": "НДС не облагается"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "23000010260000000006_1",
+            "noticeNumber": "23000010260000000006",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "Земельный участок, с кадастровым номером 56:21:2301002:105, общей площадью 800 кв.м",
+            "lotDescription": "Земельный участок, с кадастровым номером 56:21:2301002:105, общей площадью 800 кв.м, разрешенное использование – для индивидуального жилищного строительства (код 2.1), категория земель: земли населенных пунктов, местоположение: Российская Федерация, Оренбургская область, муниципальный район Оренбургский, сельское поселение Степановский сельсовет, хутор Степановский, улица Комсомольская, земельный участок 35",
+            "priceMin": 1364800.00,
+            "priceMinExact": "1364800.00",
+            "biddEndTime": "2026-09-07T08:00:00.000+00:00",
+            "lotImages": [
+                "6a85891f57a2662b552644d7"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.0",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.0",
+                            "name": "Жилая застройка",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "56:21:2301002:105",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "800.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "residential",
+                            "selectNsi": "territorialZones",
+                            "code": "residential",
+                            "name": "Жилая",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_RTS",
+            "subjectRFCode": "56",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T10:50:00.899+00:00",
+            "timeZoneName": "МСК+2",
+            "timezoneOffset": "300",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "value": "в соответствии с аукционной документацией и регламентом ЭП",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "value": "право муниципальной собственности",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "Ограничения (обременения) прав на земельный участок, предусмотренные статьей 56 Земельного кодекса Российской Федерации.",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "в соответствии с аукционной документацией ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "в соответствии с аукционной документацией ",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "value": "в соответствии с аукционной документацией ",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "value": "отсутствует",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "value": "отсутствует",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "в соответствии с аукционной документацией и регламентом ЭП",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "в соответствии с аукционной документацией и регламентом ЭП",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T10:53:34.912Z",
+            "lotVat": {
+                "code": "notAssessedVAT",
+                "name": "НДС не облагается"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        },
+        {
+            "id": "22000013150000000348_1",
+            "noticeNumber": "22000013150000000348",
+            "lotNumber": 1,
+            "lotStatus": "PUBLISHED",
+            "biddType": {
+                "code": "ZK",
+                "name": "Аренда и продажа земельных участков"
+            },
+            "biddForm": {
+                "code": "EA",
+                "name": "Электронный аукцион"
+            },
+            "lotName": "Электронный аукцион по продаже земельного участка с кадастровым номером 59:34:0530101:1626, площадью 1755 кв.м, с видом разрешенного использования: Для ведения личного подсобного хозяйства (приусадебный земельный участок), расположенного на землях населенных пунктов, по адресу:Российская Федерация, Пермский край, муниципальный округ Соликамский, село Верхнее Мошево, улица Совхозная",
+            "lotDescription": "Электронный аукцион по продаже земельного участка с кадастровым номером 59:34:0530101:1626, площадью 1755 кв.м, с видом разрешенного использования: Для ведения личного подсобного хозяйства (приусадебный земельный участок), расположенного на землях населенных пунктов, по адресу:Российская Федерация, Пермский край, муниципальный округ Соликамский, село Верхнее Мошево, улица Совхозная",
+            "priceMin": 175500.00,
+            "priceMinExact": "175500.00",
+            "biddEndTime": "2026-09-08T07:00:00.000+00:00",
+            "lotImages": [
+                "6a85792fac85246d2d825ffc"
+            ],
+            "lotVideos": [],
+            "characteristics": [
+                {
+                    "characteristicValue": [
+                        {
+                            "value": "2.2",
+                            "selectNsi": "PermittedUse",
+                            "code": "2.2",
+                            "name": "Для ведения личного подсобного хозяйства (приусадебный земельный участок)",
+                            "actual": false
+                        }
+                    ],
+                    "name": "Основной вид разрешенного использования",
+                    "code": "PermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "characteristicValue": "59:34:0530101:1626",
+                    "name": "Кадастровый номер земельного участка",
+                    "code": "CadastralNumber",
+                    "type": "Text(500)"
+                },
+                {
+                    "characteristicValue": "1755.0",
+                    "name": "Площадь земельного участка",
+                    "code": "SquareZU",
+                    "unit": {
+                        "code": "055",
+                        "name": "Квадратный метр",
+                        "symbol": "м^2"
+                    },
+                    "type": "Decimal"
+                },
+                {
+                    "name": "Регистрационный номер ЕГРОКН",
+                    "code": "regNumberEGROKN",
+                    "type": "String"
+                },
+                {
+                    "name": "Вспомогательный вид разрешенного использования",
+                    "code": "subsidiaryPermittedUse",
+                    "type": "Multiselect"
+                },
+                {
+                    "name": "Территориальные зоны",
+                    "code": "territorialZones",
+                    "type": "Multiselect"
+                }
+            ],
+            "currencyCode": "643",
+            "etpCode": "ETP_SBAST",
+            "subjectRFCode": "59",
+            "category": {
+                "code": "301",
+                "name": "Земли населенных пунктов"
+            },
+            "createDate": "2026-08-19T09:24:17.754+00:00",
+            "timeZoneName": "МСК+2",
+            "timezoneOffset": "300",
+            "hasAppeals": false,
+            "isStopped": false,
+            "attributes": [
+                {
+                    "code": "DA_contractSignPeriod__EA(ZK)",
+                    "fullName": "Срок заключения договора",
+                    "attributeType": "Text(100)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                },
+                {
+                    "code": "DA_contractType_EA(ZK)",
+                    "fullName": "Вид договора",
+                    "value": {
+                        "code": "договор_купли_продажи_земельного_участка_Select",
+                        "name": "Договор купли-продажи земельного участка"
+                    },
+                    "attributeType": "Select",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 3
+                },
+                {
+                    "code": "DA_landRights_EA(ZK)",
+                    "fullName": "Права на земельный участок",
+                    "value": "государственная собственность не разграничена",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 25
+                },
+                {
+                    "code": "DA_landRestrictions_EA(ZK)",
+                    "fullName": "Ограничения прав на земельный участок",
+                    "value": "Ограничения прав подробно описаны:\nв выписке из Единого государственного реестра недвижимости об объекте недвижимости  от 13.08.2026 № КУВИ-001/2026-108992857: зона с особыми условиями использования территории: часть прибрежной защитной полосы Камского водохранилища (реестровый номер границы: 59:01-6.4321); часть водоохранной зоны Камского водохранилища (реестровый номер границы: 59:01-6.1326).\nПри необходимости сноса зеленых насаждений, произрастающих на земельном участке, необходимо обратиться",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 30
+                },
+                {
+                    "code": "DA_constructionParametersMax_EA(ZK)",
+                    "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Информация содержится  в градостроительном плане земельного участка № RU59304000-0163-2026-0 от 17.04.2026 размещенном с настоящим извещением о проведении аукциона в ГИС Торги www.torgi.gov.ru.\n       С уведомлением о планируемом строительстве жилого дома рекомендуется обратиться в Комитет по архитектуре и градостроительству Администрации Соликамского муниципального округа.\n",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 36
+                },
+                {
+                    "code": "DA_constructionParametersMin_EA(ZK)",
+                    "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+                    "value": "Информация содержится  в градостроительном плане земельного участка № RU59304000-0163-2026-0 от 17.04.2026 размещенном с настоящим извещением о проведении аукциона в ГИС Торги www.torgi.gov.ru.\n       С уведомлением о планируемом строительстве жилого дома рекомендуется обратиться в Комитет по архитектуре и градостроительству Администрации Соликамского муниципального округа.\n",
+                    "attributeType": "Text(1000)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 37
+                },
+                {
+                    "code": "DA_connectionETSN_EA(ZK)",
+                    "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+                    "value": "Письма: МБУ «Коммунальное хозяйство Тохтуева» № 023 от 15.04.2026 подключение к сетям водоснабжения и водоотведения отсутствуют. ПАО «Ростелеком» от 17.04.2026 № 01/05/62281/26 технологическое присоединение возможно. МУП «Теплоэнерго» № 740 от 20.04.2026  технической возможности нет. АО «Газпром газораспределение Пермь» от 17.04.2026 № 186 возможность подключения отсутствует. Более подробно в Извещении (приложение).",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 38
+                },
+                {
+                    "code": "DA_demolition_EA(ZK)",
+                    "fullName": "Информация об обязательствах по сносу здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 51
+                },
+                {
+                    "code": "DA_bringing_EA(ZK)",
+                    "fullName": "Информация об обязательствах по приведению в соответствие с установленными требованиями здания, сооружения, объекта незавершенного строительства, которые расположены на земельном участке",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL250",
+                        "name": "5.3 Лот_основная_информация",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 52
+                },
+                {
+                    "code": "DA_depositTimeAndRules_EA(ZK)",
+                    "fullName": "Срок и порядок внесения задатка",
+                    "value": "с 20.08.2026 с 09:00 ч. по 08.09.2026 до 12:00 ч. по местному времени (7:00 – 10:00 МСК). Внесение задатка в сроки, предусмотренные для подачи заявок, поступившего ко дню определения участников аукциона на счет организатора торгов. Более подробная информация указана в Извещении.",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 1
+                },
+                {
+                    "code": "DA_depositRefund_EA(ZK)",
+                    "fullName": "Порядок возврата задатка",
+                    "value": "В течение трех рабочих дней со дня подписания протокола о результатах аукциона Организатор аукциона обязан возвратить задатки лицам, участвовавшим в аукционе, но не победившим в нем, за исключением участника аукциона, который сделал предпоследнее предложение о цене предмета аукциона. Задаток, внесенный таким участником, возвращается ему в течение 3 дней со дня подписания договора купли-продажи или договора аренды земельного участка победителем аукциона. Более подробная инф-ия указана в Извещении",
+                    "attributeType": "Text(500)",
+                    "group": {
+                        "code": "NL255",
+                        "name": "5.4.2 Лот_информация_о_задатке_дин",
+                        "displayGroupType": "LOT"
+                    },
+                    "sortOrder": 2
+                }
+            ],
+            "noticeAttributes": [
+                {
+                    "code": "DA_tradingFeatures_EA(ZK)",
+                    "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+                    "value": false,
+                    "attributeType": "Checker",
+                    "group": {
+                        "code": "N250",
+                        "name": "1.2 Извещение_основные_сведения",
+                        "displayGroupType": "NOTICE"
+                    },
+                    "sortOrder": 1
+                }
+            ],
+            "isAnnulled": false,
+            "noticeFirstVersionPublicationDate": "2026-08-19T10:20:42.034Z",
+            "lotVat": {
+                "code": "excludingVAT",
+                "name": "Без учета НДС"
+            },
+            "npaHintCode": "hint1_ZK",
+            "typeTransaction": "sale"
+        }
+    ],
+    "pageable": {
+        "pageNumber": 0,
+        "pageSize": 10,
+        "sort": {
+            "unsorted": false,
+            "sorted": true,
+            "empty": false
+        },
+        "offset": 0,
+        "unpaged": false,
+        "paged": true
+    },
+    "categoryFacet": [
+        {
+            "_id": "301",
+            "count": 149
+        }
+    ],
+    "totalPages": 15,
+    "last": false,
+    "totalElements": 149,
+    "first": true,
+    "numberOfElements": 10,
+    "size": 10,
+    "number": 0,
+    "sort": {
+        "unsorted": false,
+        "sorted": true,
+        "empty": false
+    },
+    "empty": false
+}
+
+
+
+----------------------------------
+
+
+В totalElements - общее кол-во элементов
+В totalPages - Общее кол-во страниц
+В number - номер текущей страницы (от 0 до totalPages).
+"last": false или true последняя страница в выборке или нет - при парсинге проверять и не продолжать если true
+
+---
+
+в content массив элементов: каждый элемент сохраням в sqlite по идентификатору лота пример: "id": "22000062030000003021_1" (у каждого свой номер - не числовое значение).
+Сохраняемые поля:
+"noticeNumber" - у каждого "noticeNumber" может быть много лотов
+"lotNumber"
+"biddForm" - "code"
+"biddForm" - "name" - тип торгов
+"lotName"
+"priceMin"
+"biddEndTime" - Дата окончания подачи заявок
+"lotImages" - массив с идентификаторами изображений (сохранить как json или через разделитель для дальнейшего обращения)
+"characteristics"[0] - "characteristicValue" - "name" - Основной вид разрешенного использования
+"characteristics"[1] - "characteristicValue" - Кадастровый номер (строка в формате 50:32:0090201:2546)
+"characteristics"[2] - "characteristicValue" - Площадь м^2
+"etpCode" - код торговой площадки (может отсутствовать)
+"createDate" - дата публикации
+"noticeFirstVersionPublicationDate" - Дата первой публикации извещения (извещения часто переподаются)
+"lotVat" - "name" - (информация о НДС)
+---
+
+Путь к полному изображению:
+https://torgi.gov.ru/new/image-preview/v1/6a85519ff66df71e74bb75e2?disposition=inline
+где 6a85519ff66df71e74bb75e2 значение из массива "lotImages"
+
+Путь к уменьшенному изображению: 
+https://torgi.gov.ru/new/image-preview/v1/6a85519ff66df71e74bb75e2?disposition=inline&resize=600x600!
+
+----
+
+
+Путь к полной информации по конкретному лоту. GET запрос:
+
+https://torgi.gov.ru/new/api/public/lotcards/21000004710000027337_1
+где 21000004710000027337_1 - "id" лота
+
+
+
+Пример ответа:
+
+
+{
+    "id": "21000004710000027337_1",
+    "lotName": "Аукцион в отношении земельного участка с КН 50:32:0090201:2546",
+    "lotStatus": "PUBLISHED",
+    "biddForm": {
+        "code": "EA",
+        "name": "Электронный аукцион"
+    },
+    "noticeNumber": "21000004710000027337",
+    "lotNumber": 1,
+    "biddType": {
+        "code": "ZK",
+        "name": "Аренда и продажа земельных участков"
+    },
+    "subjectRFCode": "50",
+    "lotDescription": "Аукцион в отношении земельного участка с КН 50:32:0090201:2546",
+    "priceMin": 656747.37,
+    "priceMinExact": "656747.37",
+    "priceStep": 19702.42,
+    "lotImages": [
+        "6a859cedac85246d2d828ff5"
+    ],
+    "lotVideos": [],
+    "lotAttachments": [
+        {
+            "fileId": "6a859cf5efd603213f10ed9e",
+            "signatureId": "6a85a974e7fb8040091d9767",
+            "fileName": "ДКП.docx",
+            "fileSize": 32,
+            "uploadDate": "2026-08-19T12:16:24.413+00:00",
+            "hash": "a603cd08de44d468d5bd415ae9ce4bb0a08b04887c3c167af0d39bdb2a02feaa",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cf563124f3d8ea340fc",
+            "signatureId": "6a85a979776e393f5c51eea9",
+            "fileName": "14.08.2026_148-1.1.21_8490исх_Богомолов_Р.И._Организации_п.с..pdf",
+            "fileSize": 32,
+            "uploadDate": "2026-08-19T12:16:24.413+00:00",
+            "hash": "7036db8977b49fa19dc07cd0889635ba88e5cd26bc039cd2f944d837a3390924",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cf457a2662b5526660b",
+            "signatureId": "6a85a975776e393f5c51eea5",
+            "fileName": "егрн.pdf",
+            "fileSize": 32,
+            "uploadDate": "2026-08-19T12:16:24.414+00:00",
+            "hash": "d2009dbb3d567782fa70ded3c951f6b3dc06935a64a6a27029423ae3b1390884",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cf463124f3d8ea340f7",
+            "signatureId": "6a85a97cd0875045cce8437d",
+            "fileName": "ГПЗУ.pdf",
+            "fileSize": 32,
+            "uploadDate": "2026-08-19T12:16:24.414+00:00",
+            "hash": "65c10549be07a85592b5b88419adb765ca0320da62d3a00bdef3521bd5830f8e",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cf257a2662b552665fb",
+            "signatureId": "6a85a977d0875045cce8437c",
+            "fileName": "Акт осмотра.pdf",
+            "fileSize": 32,
+            "uploadDate": "2026-08-19T12:16:24.415+00:00",
+            "hash": "beb17038271f31fadd6e3559638e71622d3c3b3d44f9ad32f2afe96e2b26b9fe",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cf0efd603213f10ed9b",
+            "signatureId": "6a85a97c776e393f5c51eeab",
+            "fileName": "Авто Си.pdf",
+            "fileSize": 32,
+            "uploadDate": "2026-08-19T12:16:24.415+00:00",
+            "hash": "65af5aeb44d4a7cc0f2cc7ae3d826112d20bac2058c0587c849a1cbf383e88fe",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cefac85246d2d829000",
+            "signatureId": "6a85a97be7fb8040091d9769",
+            "fileName": "Решение о проведении торгов.pdf",
+            "fileSize": 32,
+            "uploadDate": "2026-08-19T12:16:24.416+00:00",
+            "hash": "d016b9392d2792711c2005105b36c1ee75cc0eb9df963de674b2fbfa7fddb3a8",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cedac85246d2d828ff5",
+            "signatureId": "6a85a97a776e393f5c51eeaa",
+            "fileName": "фото.jpg",
+            "fileSize": 287025,
+            "uploadDate": "2026-08-19T12:16:25.021+00:00",
+            "hash": "528d9c56cce56646e94f48b8481701e695f21953aee8462cc8c0f28c899fd042",
+            "inactive": false,
+            "checkResult": "OK"
+        }
+    ],
+    "noticeAttachments": [
+        {
+            "fileId": "6a859ced57a2662b552665dd",
+            "signatureId": "6a85a974e7fb8040091d9768",
+            "fileName": "Инструкция ЛКА 2026.pdf",
+            "fileSize": 1733469,
+            "uploadDate": "2026-08-19T12:16:24.378+00:00",
+            "hash": "91558e465a00a776714c1628b00e4bd0516046902f548b4d42e496a8052df552",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cec57a2662b552665d4",
+            "signatureId": "6a85a978ca5e7b2e90dffa28",
+            "fileName": "Инструкция_по_регистрации_физ_лица.pdf",
+            "fileSize": 1277472,
+            "uploadDate": "2026-08-19T12:16:24.378+00:00",
+            "hash": "58c703621262820c9b7071cf4d36e26c289417cda328f78da3a8a5dee6c088b8",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859cebefd603213f10ed88",
+            "signatureId": "6a85a97d776e393f5c51eeac",
+            "fileName": "ПАМЯТКА.pdf",
+            "fileSize": 3499453,
+            "uploadDate": "2026-08-19T12:16:24.379+00:00",
+            "hash": "822f5e5e9b300bfcd63ddd7aa74526cd6e9f6e70522563c09fa24ead5858027e",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        },
+        {
+            "fileId": "6a859ce9ac85246d2d828ff1",
+            "signatureId": "6a85a976776e393f5c51eea8",
+            "fileName": "Извещение+№+ПЗЭ-СРП_26-4672.pdf",
+            "fileSize": 246666,
+            "uploadDate": "2026-08-19T12:16:24.379+00:00",
+            "hash": "4bd36f0b04e549eb625f6d875447cb987beae7c806ae48b1a56179ed8e3420f4",
+            "attachmentTypeCode": "Other",
+            "attachmentTypeName": "Иное",
+            "inactive": false,
+            "checkResult": "OK"
+        }
+    ],
+    "characteristics": [
+        {
+            "characteristicValue": 1263.0,
+            "name": "Площадь земельного участка",
+            "code": "SquareZU",
+            "unit": {
+                "code": "055",
+                "name": "Квадратный метр",
+                "symbol": "м^2"
+            },
+            "type": "Decimal"
+        },
+        {
+            "characteristicValue": "50:32:0090201:2546",
+            "name": "Кадастровый номер земельного участка",
+            "code": "CadastralNumber",
+            "type": "Text(500)"
+        },
+        {
+            "characteristicValue": [
+                {
+                    "value": "2.2",
+                    "selectNsi": "PermittedUse",
+                    "code": "2.2",
+                    "name": "Для ведения личного подсобного хозяйства (приусадебный земельный участок)",
+                    "actual": true
+                }
+            ],
+            "name": "Основной вид разрешенного использования",
+            "code": "PermittedUse",
+            "type": "Multiselect"
+        }
+    ],
+    "currencyCode": "643",
+    "etpCode": "ETP_RTS",
+    "category": {
+        "code": "301",
+        "name": "Земли населенных пунктов"
+    },
+    "timeZoneName": "МСК",
+    "timezoneOffset": "180",
+    "ownershipForm": {
+        "code": "97",
+        "name": "Государственная собственность (неразграниченная)"
+    },
+    "etpUrl": "https://i.rts-tender.ru/main/auction/Trade/Privatization/View.aspx?Id=265701&Guid=8d93a7e9-d080-4382-aed2-53a2ea655583#520643",
+    "deposit": 656747.37,
+    "estateAddress": "обл. Московская, г.о. Серпухов Московская область, городской округ Серпухов, деревня Подмоклово",
+    "attributes": [
+        {
+            "code": "DA_landRestrictions_EA(ZK)",
+            "fullName": "Ограничения прав на земельный участок",
+            "value": "Согласно Извещению о проведении аукциона",
+            "attributeType": "Text(500)",
+            "group": {
+                "code": "NL250",
+                "name": "5.3 Лот_основная_информация",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 30
+        },
+        {
+            "code": "DA_contractType_EA(ZK)",
+            "fullName": "Вид договора",
+            "value": {
+                "code": "договор_купли_продажи_земельного_участка_Select",
+                "name": "Договор купли-продажи земельного участка"
+            },
+            "attributeType": "Select",
+            "group": {
+                "code": "NL250",
+                "name": "5.3 Лот_основная_информация",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 3
+        },
+        {
+            "code": "DA_contractSignPeriod__EA(ZK)",
+            "fullName": "Срок заключения договора",
+            "value": "Согласно Извещению о проведении аукциона",
+            "attributeType": "Text(100)",
+            "group": {
+                "code": "NL250",
+                "name": "5.3 Лот_основная_информация",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 2
+        },
+        {
+            "code": "DA_constructionParametersMax_EA(ZK)",
+            "fullName": "Максимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+            "value": "Согласно Извещению о проведении аукциона",
+            "attributeType": "Text(1000)",
+            "group": {
+                "code": "NL250",
+                "name": "5.3 Лот_основная_информация",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 36
+        },
+        {
+            "code": "DA_constructionParametersMin_EA(ZK)",
+            "fullName": "Минимально допустимые параметры разрешенного строительства объекта капитального строительства (при необходимости)",
+            "value": "Согласно Извещению о проведении аукциона",
+            "attributeType": "Text(1000)",
+            "group": {
+                "code": "NL250",
+                "name": "5.3 Лот_основная_информация",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 37
+        },
+        {
+            "code": "DA_connectionETSN_EA(ZK)",
+            "fullName": "Возможность подключения (технологического присоединения) объектов капитального строительства к сетям инженерно-технического обеспечения (за исключением сетей электроснабжения)",
+            "value": "Согласно Извещению о проведении аукциона",
+            "attributeType": "Text(500)",
+            "group": {
+                "code": "NL250",
+                "name": "5.3 Лот_основная_информация",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 38
+        },
+        {
+            "code": "DA_depositTimeAndRules_EA(ZK)",
+            "fullName": "Срок и порядок внесения задатка",
+            "value": "Согласно Извещению о проведении аукциона",
+            "attributeType": "Text(500)",
+            "group": {
+                "code": "NL255",
+                "name": "5.4.2 Лот_информация_о_задатке_дин",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 1
+        },
+        {
+            "code": "DA_depositRefund_EA(ZK)",
+            "fullName": "Порядок возврата задатка",
+            "value": "Согласно Извещению о проведении аукциона",
+            "attributeType": "Text(500)",
+            "group": {
+                "code": "NL255",
+                "name": "5.4.2 Лот_информация_о_задатке_дин",
+                "displayGroupType": "LOT"
+            },
+            "sortOrder": 2
+        }
+    ],
+    "depositElectronicPlatform": true,
+    "depositRecipientName": "ООО \"РТС-тендер\"",
+    "depositRecipientINN": "7710357167",
+    "depositRecipientKPP": "773001001",
+    "depositBankName": "Филиал \"Корпоративный\" ПАО \"Совкомбанк\"",
+    "depositBIK": "044525360",
+    "depositPayAccount": "40702810512030016362",
+    "depositCorAccount": "30101810445250000360",
+    "depositPurposePayment": "Внесение гарантийного обеспечения по Соглашению о внесении гарантийного обеспечения, № аналитического счета _________, без НДС.",
+    "hasAppeals": false,
+    "isStopped": false,
+    "auctionStartDate": "2026-09-09T09:00:00Z",
+    "biddStartTime": "2026-08-20T06:00:00Z",
+    "biddEndTime": "2026-09-07T15:00:00Z",
+    "versionId": "bb3c5ae0-56c1-4d69-850f-871a26381b88",
+    "noticeSignedData": {
+        "fileId": "6a85a96d63124f3d8ea34ffb",
+        "signatureId": "6a85a973ca5e7b2e90dffa27",
+        "fileName": "Извещение о торгах.json",
+        "fileSize": 11087,
+        "uploadDate": "2026-08-19T13:02:37.055+00:00",
+        "hash": "a238e8a1e9a75802c801a3a2a228eddac3b46f1e7331cb11c6ade023a39e8e24",
+        "inactive": false
+    },
+    "egrnInfoRequestList": [
+        {
+            "requestId": "21000004710000027337_1_1_26081913:02:56",
+            "status": "RECEIVED",
+            "hasRestrictions": false,
+            "cadastralOrderNumber": 1,
+            "objects": [
+                {
+                    "code": "CadastralNumber",
+                    "objectTypeCode": "002001001000",
+                    "cadastralNumber": "50:32:0090201:2546"
+                }
+            ]
+        }
+    ],
+    "noticeAttributes": [
+        {
+            "code": "DA_tradingFeatures_EA(ZK)",
+            "fullName": "Торги проводятся с учетом особенностей в соответствии с 161-ФЗ от 24.07.2008 «О содействии развитию жилищного строительства»",
+            "value": false,
+            "attributeType": "Checker",
+            "group": {
+                "code": "N250",
+                "name": "1.2 Извещение_основные_сведения",
+                "displayGroupType": "NOTICE"
+            },
+            "sortOrder": 1
+        }
+    ],
+    "noticeFirstVersionPublicationDate": "2026-08-19T13:02:54.918Z",
+    "isAnnulled": false,
+    "lotVat": {
+        "code": "notAssessedVAT",
+        "name": "НДС не облагается"
+    },
+    "npaHintCode": "hint1_ZK",
+    "typeTransaction": "sale",
+    "point": {
+        "lat": 54.944978,
+        "lon": 37.544441
+    }
+}
+
+
+Откуда нам понадобятся значения:
+"lotStatus" - строка 
+"priceStep" - шаг торгов
+"lotAttachments" - Документы лота, массив объектов:
+"lotAttachments" - "lotAttachments" - "fileId" (id файла - строка)
+"lotAttachments" - "fileName"
+"lotAttachments" - "attachmentTypeName" - Тип документа
+
+Далее так же с документами извещения:
+"noticeAttachments" - "fileId"
+"noticeAttachments" - "fileName"
+"noticeAttachments" - "attachmentTypeName"
+
+"etpUrl" - ссылка на торговую площадку
+"deposit" - Задаток
+"estateAddress" - Адрес
+"auctionStartDate" - Старт аукциона
+"biddStartTime" - Подача заявок (от)
+"biddEndTime": Подача заявок (до)
+"versionId" - строка - версия извещения (бывают переподачи одного и того же лота - новый versionId загружать как новый лот
+-----
+
+Пример ссылки на скачивание файла:
+https://torgi.gov.ru/new/file-store/v1/6a85a18c57a2662b55266db8
+где 6a85a18c57a2662b55266db8 - "lotAttachments" - "fileId"
+--------
+
+Список всех торговых площадок (сохранить в отдельной таблице и отображать из нее значение "shortName" по ключу "code" который равен "etpCode" в результатах запросов лотов):
+
+[
+    {
+        "code": "ETP_EETP",
+        "name": "АКЦИОНЕРНОЕ ОБЩЕСТВО «ЕДИНАЯ ЭЛЕКТРОННАЯ ТОРГОВАЯ ПЛОЩАДКА»",
+        "published": true,
+        "site": "ROSELTORG.RU",
+        "shortName": "АО «ЕЭТП»",
+        "icon": {
+            "id": "512",
+            "url": "61bb79f05925817b31629a6f",
+            "fileName": "площадка=roseltorg, размер=80.png"
+        },
+        "keyETP": "f18bf112038c386bfbd5359152b1618137f1bc60",
+        "order": 1
+    },
+    {
+        "code": "ETP_RTS",
+        "name": "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «РТС-ТЕНДЕР»",
+        "published": true,
+        "site": "RTS-TENDER.RU",
+        "shortName": "РТС-тендер",
+        "icon": {
+            "id": "514",
+            "url": "61bb79f15925817b31629ac1",
+            "fileName": "площадка=rst, размер=80.png"
+        },
+        "keyETP": "ba769d1ee1256a5fbcc65b17b89de9dfb5673c20",
+        "order": 2
+    },
+    {
+        "code": "ETP_SBAST",
+        "name": "АКЦИОНЕРНОЕ ОБЩЕСТВО «СБЕРБАНК - АВТОМАТИЗИРОВАННАЯ СИСТЕМА ТОРГОВ»",
+        "published": true,
+        "site": "SBERBANK-AST.RU",
+        "shortName": "АО «Сбербанк-АСТ»",
+        "icon": {
+            "id": "515",
+            "url": "61bb79f15925817b31629aaf",
+            "fileName": "площадка=Sber, размер=80.png"
+        },
+        "keyETP": "42680edbc63951e2f0267d9a3a03a2e057053ae4",
+        "order": 3
+    },
+    {
+        "code": "ETP_AVK",
+        "name": "АКЦИОНЕРНОЕ ОБЩЕСТВО «АГЕНТСТВО ПО ГОСУДАРСТВЕННОМУ ЗАКАЗУ РЕСПУБЛИКИ ТАТАРСТАН»",
+        "published": true,
+        "site": "ETP.ZAKAZRF.RU",
+        "shortName": "АГЗ РТ",
+        "icon": {
+            "id": "509",
+            "url": "61bb79f05925817b31629a5f",
+            "fileName": "площадка=oset, размер=80.png"
+        },
+        "keyETP": "3f64b6582a43d13fc4b577cba0d36081898a9c09",
+        "order": 4
+    },
+    {
+        "code": "ETP_TEKTORG",
+        "name": "АКЦИОНЕРНОЕ ОБЩЕСТВО «ТЭК-Торг»",
+        "published": true,
+        "site": "TEKTORG.RU",
+        "shortName": "ЭТП ТЭК-Торг",
+        "icon": {
+            "id": "511",
+            "url": "61bb79f15925817b31629ab9",
+            "fileName": "площадка=tektorg, размер=80.png"
+        },
+        "order": 5
+    },
+    {
+        "code": "ETP_GPB",
+        "name": "ООО «ЭЛЕКТРОННАЯ ТОРГОВАЯ ПЛОЩАДКА ГПБ»",
+        "published": true,
+        "site": "ETPGPB.RU/products/sales/",
+        "shortName": "ЭТП Газпромбанк",
+        "icon": {
+            "id": "508",
+            "url": "61bb79f15925817b31629acb",
+            "fileName": "площадка=etpGpb, размер=80.png"
+        },
+        "keyETP": "938a6b04e5e58e8cfa3990f50a7b0f80467766b1",
+        "order": 6
+    },
+    {
+        "code": "ETP_MMVB",
+        "name": "ЭЛЕКТРОННАЯ ТОРГОВАЯ ПЛОЩАДКА «ФАБРИКАНТ»",
+        "published": true,
+        "site": "FABRIKANT.RU",
+        "shortName": "ЭТП «Фабрикант»",
+        "icon": {
+            "id": "3209",
+            "url": "6465f956d9ef802c646ae95e",
+            "fileName": "Fabrikant 80х80_лазурный_круг(52х52).svg"
+        },
+        "keyETP": "493b17ed32d802bf96d87f0f531010b7bcd86754",
+        "order": 7
+    },
+    {
+        "code": "ETP_RAD",
+        "name": "АКЦИОНЕРНОЕ ОБЩЕСТВО «РОССИЙСКИЙ АУКЦИОННЫЙ ДОМ» ",
+        "published": true,
+        "site": "CATALOG.LOT-ONLINE.RU",
+        "shortName": "АО «РАД»",
+        "icon": {
+            "id": "633",
+            "url": "61cdccf479a4450c49d9683b",
+            "fileName": "площадка=rad, размер=80 (1).png"
+        },
+        "keyETP": "057a402253d66e5b36bc4fb6f781549b0e2db2c2",
+        "order": 8
+    }
+]
+
+-----------
+# Описание Приложения:
+
+(Подключить дополнительные библиотеки для стилей и элементов ui при необходимости).
+
+Слева по нажатию на кнопку фильтра выдвигается сайдбар с фильтрами (с эффектом затемнения и блюра) и внизу кнопка загрузить. Элементы фильтра берутся из параметоров get запроса описанных выше.
+
+На главной странице происходит загрузка первой станицы резульаттов (10 лотов) ниже под результатами пагинация (из "totalPages")
+
+С списке результатов краткие карточки: Миниатюра первого изображения из массива, Кадастровый номер в качестве наименования, Начальная цена в рублях, под ценой мелко инфа об ндс, площадь, Адрес, Основной вид разрешенного использования, Электронная площадка, Дата и время окончания подачи заявок ("Осталось: " и таймер с обратным отсчетом (подключить плагин если нужно, продумать чтобы не глючило) и под таймером сама дата и время - если истекло - красным цветом).
+Кнопка выпадающего меню: там действия:
+"Не интересно" - тогда карточка сворачивается до отображения одного кадастрового номера и становится блеклой.
+"На доску" - действие создает в crm системе карточку на канбан-доске (пока описать общее поведение интеграции с yougile API (https://ru.yougile.com/api-v2#/) - авторизационные данные yougile должны вводиться на отдельной странице настроек пользователя (реализовать бозовую авторизацию на laravel - у каждого пользователя может быть свой доступ к yougile) - описать логику создания карточки с данными лота на доске) (если данные yougile не заполнены, кнопка "На доску" не активна)  - так же ставит флажок на карточку из изображения по адресу resources/img/yougile2.avif (круглая иконка) и пункт "На доску" у такой карточки уже не активен.
+
+Оформить карточки красиво и удобно, более важная инфа крупнее, но в общем карточки сжаты по формату.
+
+При нажатии на карточку лота разворачивается модальное окно с развернутой информацией о лоте (всё тоже но дополнить инфой из второго запроса).
+Swiper слайдер изображений с lazy load, если их более одного.
+Название этп теперь ведет на адрес "etpUrl".
+Ниже список ссылок на файлы документации (только "fileName" c иконкой файла и при нажатии, если это pdf, то отобразить через pdf js в новой модалке).
+
+Внутри раскрытой карточки тоже есть выпадающее менб с теми же действиями, и выбор "Не интересно" внутри раскрытой карточки закрывает текущее модальное окно лота.
+
+Все перечисленные выше данные лота сохраняются в бд. Изображения отображаются по прямой ссылке стороннего ресурса и кэшируются на клиенте, pdf файлы тоже на клиенте, но файлы офисных документов при нажатии на ссылку скачиваются на сервер, через headless libreOffice конвертируются в pdf и отдаются клиенту и кэшируются у него и сохраняются на сервере, при повторном нажатии конвертация не повторяется а отдается из кэша если есть, если нет то из сервера, если нет, то снова конвертируется на сервере.
+Напротив каждого файла из списка есть значек скачать, по которому уже происходит переход на оригинальную ссылку ресурса.
+Записи лотов в бд старше 20 дней удаляются по каждодневному заданию вместе с привязанными файлами.
+
+Если карточка лота была раскрыта, то лот в бд помечается как "просмотрено" и на карточке лота ставится соответствующий флажок.
+
+При каждой загрузке данных происходит сверка с данными в бд и если "createDate" прежний то отображать данные из бд (даже если было помечено как "не интересно" все равно отобразить, но в блеклом укороченном виде. Если "createDate" изменилась, то все данные лота обновить.
+
+Далее ниже загруженных данных разместить блок со вкладками (tabs), (Каждый подгружается только после ее открытия) (контент вкладок во всю ширину экрана и 2/3 высоты экрана) ( на десктопе кнопка в углу вкладки "во весь экран" (иконка) раскрывает вкладку и активирует полноэкранный режим браузера, в полноэкранном режиме кнопка сменяется на значек "закрыть" (у maplibre есть своя функция map.addControl(new maplibregl.FullscreenControl()); )) (все карты должны открываться на координатах участка земли):
+
+-- Карта maplibre с рельефом (Пример https://maplibre.org/maplibre-gl-js/docs/examples/3d-terrain/ )
+
+-- Карта maplibre обычная (базовая)
+
+-- iframe https://www.google.com/maps/@55.6806894,52.4390163,425m
+
+-- iframe https://yandex.ru/maps/?ll=51.810127%2C55.647468&z=19
+
+-- iframe на Сайт НСПД (https://nspd.gov.ru/cadastral-price/search?zoom=19&coordinate_x=4150033.312618562&coordinate_y=7584918.39034542&baseLayerId=36344)
+где coordinate_x=4150033.312618562&coordinate_y=7584918.39034542 - координаты 
+
+---
+
+Эффекты дымки и неба https://maplibre.org/maplibre-gl-js/docs/examples/sky-fog-terrain/ (без настроек - жестко заданные параметры, только приближенные к реальным, а не из примера)
+
+---
+Пример с контурами высот https://maplibre.org/maplibre-gl-js/docs/examples/add-a-vector-tile-source/
+---
+
+
+Функция замера расстояния https://maplibre.org/maplibre-gl-js/docs/examples/measure-distances/
+
+---
+
+Пример рисования полигона на карте https://maplibre.org/maplibre-gl-js/docs/examples/add-a-geojson-polygon/
+
+---
+
+Получение координат полигона по кадастровому номеру:
+
+https://nspd.gov.ru/api/geoportal/v2/search/cadastralPrice?query=50%3A04%3A0160306%3A1229
+где query=50:04:0160306:1229
+
+Пример ответа:
+
+{
+    "data": {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "id": 1867933281,
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                4148406.9596581017,
+                                7583368.483799068
+                            ],
+                            [
+                                4148420.857608926,
+                                7583302.034137865
+                            ],
+                            [
+                                4148452.7651072512,
+                                7583302.598348751
+                            ],
+                            [
+                                4148451.554859687,
+                                7583371.33535016
+                            ],
+                            [
+                                4148406.9596581017,
+                                7583368.483799068
+                            ]
+                        ]
+                    ],
+                    "crs": {
+                        "type": "name",
+                        "properties": {
+                            "name": "EPSG:3857"
+                        }
+                    }
+                },
+                "properties": {
+                    "cadastralDistrictsCode": 50,
+                    "category": 36368,
+                    "categoryName": "Земельные участки ЕГРН",
+                    "descr": "50:04:0160306:1229",
+                    "externalKey": "50:04:0160306:1229",
+                    "interactionId": 1841146331,
+                    "label": "50:04:0160306:1229",
+                    "options": {
+                        "area": null,
+                        "cad_num": "50:04:0160306:1229",
+                        "cost_application_date": "2026-05-04",
+                        "cost_approvement_date": "",
+                        "cost_determination_date": "2022-01-01",
+                        "cost_index": 1062.07,
+                        "cost_registration_date": "2026-05-19",
+                        "cost_value": 859214.63,
+                        "declared_area": null,
+                        "determination_couse": "Акт бюджетного учреждения, созданного субъектом Российской Федерации, об определении кадастровой стоимости в соответствии со статьей 16 Закона 237-ФЗ",
+                        "land_record_category_type": "Земли населенных пунктов",
+                        "land_record_reg_date": "2026-05-04",
+                        "land_record_subtype": "Землепользование",
+                        "land_record_type": "Земельный участок",
+                        "ownership_type": null,
+                        "permitted_use_established_by_document": "для индивидуального жилищного строительства",
+                        "quarter_cad_number": "50:04:0160306",
+                        "readable_address": "Российская Федерация, Московская область, Дмитровский муниципальный округ, д. Рождествено",
+                        "specified_area": 809,
+                        "status": "Учтенный"
+                    },
+                    "subcategory": 5,
+                    "systemInfo": {
+                        "inserted": "2026-05-04T11:04:41.963431",
+                        "insertedBy": "7EF5CD0B-AC08-4097-AF2B-07CD85992A79",
+                        "updated": "2026-05-19T06:35:05.447943",
+                        "updatedBy": "7EF5CD0B-AC08-4097-AF2B-07CD85992A79"
+                    }
+                }
+            }
+        ]
+    },
+    "meta": [
+        {
+            "totalCount": 1,
+            "categoryId": 36368
+        }
+    ]
+}
+
+
+
+откуда нам нужны данные из "data" - "features"[0] - "geometry" - "coordinates" - кординаты границ участка (полигон) (первые и последние координаты сходятся в одной точке)
+
+Все карты maplibre во вкладках должны быть с отрисованным полигоном и должны открываться по координатам центра полигона (реализовать простую функцию рассчета центра полигона из координат вершин полигона).
+
+---
+
+Учесть обработку исключений. Значение "empty": может прийти true (тогда вывести ошибку загрузки), некоторые поля могут вовсе отсутствовать (тогда при "empty" false вместо них выводить пустоту)
+
+---
+
