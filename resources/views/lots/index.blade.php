@@ -501,7 +501,7 @@
 
     <!-- Doc Preview Modal -->
     <div x-show="previewDoc" x-cloak class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-4" @click.self="closeDocPreview()">
-            <div class="bg-white rounded-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+            <div class="bg-white rounded-2xl w-full max-w-7xl min-h-[85vh] max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
                 <div class="flex items-center justify-between px-6 py-3 border-b shrink-0">
                     <h3 class="font-semibold text-gray-800 text-sm truncate" x-text="previewDoc ? previewDoc.fileName : ''"></h3>
                     <button @click="closeDocPreview()" class="p-1.5 hover:bg-gray-100 rounded-lg shrink-0">
@@ -511,8 +511,7 @@
                 <div class="flex-1 bg-gray-100 flex items-center justify-center overflow-auto">
                     <iframe x-show="previewDoc"
                             :src="previewDoc ? getDocPreviewUrl(previewDoc) : ''"
-                            class="w-full h-full border-0"
-                            style="min-height: 75vh;"
+                            class="w-full h-full border-0 min-h-[80vh]"
                             loading="lazy"></iframe>
                 </div>
             </div>
