@@ -31,7 +31,9 @@ class CleanupOldLots extends Command
             $deletedLots++;
         }
 
-        $this->info("Удалено {$deletedLots} лотов и {$deletedFiles} файлов.");
+        $lotWord = self::pluralize($deletedLots, 'лот', 'лота', 'лотов');
+        $fileWord = self::pluralize($deletedFiles, 'файл', 'файла', 'файлов');
+        $this->info("Удалено {$deletedLots} {$lotWord} и {$deletedFiles} {$fileWord}.");
 
         Log::info('Cleanup old lots completed', [
             'deleted_lots' => $deletedLots,
@@ -75,5 +77,22 @@ class CleanupOldLots extends Command
         }
 
         return $deleted;
+    }
+
+    private static function pluralize(int $n, string $one, string $few, string $many): string
+    {
+        $abs = abs($n) % 100;
+        $lastDigit = $abs % 10;
+        if ($abs > 10 && $abs < 20) {
+            return $many;
+        }
+        if ($lastDigit > 1 && $lastDigit < 5) {
+            return $few;
+        }
+        if ($lastDigit === 1) {
+            return $one;
+        }
+
+        return $many;
     }
 }

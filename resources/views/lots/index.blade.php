@@ -12,7 +12,7 @@
                 <h1 class="text-lg font-semibold text-gray-800">Подбор земельных участков</h1>
             </div>
             <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-500" x-text="totalElements + ' лотов'"></span>
+                <span class="text-sm text-gray-500" x-text="totalElements + ' ' + pluralize(totalElements, 'лот', 'лота', 'лотов')"></span>
                 <a href="{{ route('lots.settings') }}" class="p-2 hover:bg-gray-100 rounded-lg transition" title="Настройки">
                     <span class="material-icons-outlined text-gray-700">settings</span>
                 </a>
@@ -1035,6 +1035,15 @@ function lotApp() {
             } catch (e) {
                 console.error(e);
             }
+        },
+
+        pluralize(n, one, few, many) {
+            const abs = Math.abs(n) % 100;
+            const lastDigit = abs % 10;
+            if (abs > 10 && abs < 20) return many;
+            if (lastDigit > 1 && lastDigit < 5) return few;
+            if (lastDigit === 1) return one;
+            return many;
         },
 
         getDocPreviewUrl(doc) {
