@@ -11,7 +11,7 @@ class GpzuData extends Model
         'file_id',
         'file_name',
         'permitted_uses',
-        'appendix_pdf',
+        'appendix_page',
         'drawing_page',
     ];
 

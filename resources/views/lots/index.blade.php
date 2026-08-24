@@ -377,6 +377,13 @@
                                     <span class="text-sm text-gray-500 min-w-[120px]">Старт аукциона:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.auction_start_date ? formatDate(selectedLot.auction_start_date) : '—'"></span>
                                 </div>
+                                <div x-show="selectedLot.estate_address" class="flex items-start gap-2">
+                                    <a :href="'https://www.avito.ru/all/zemelnye_uchastki?q=' + encodeURIComponent(selectedLot.estate_address)"
+                                       target="_blank" rel="noopener"
+                                       class="text-gray-400 hover:text-gray-600 transition">
+                                        <img src="{{ asset('Avito_logo.svg') }}" class="w-14 h-14" alt="Avito">
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -390,21 +397,11 @@
                                     <div class="flex items-center gap-2 py-0.5">
                                         <span class="material-icons-outlined text-xs text-gray-400 shrink-0">description</span>
                                         <button @click.stop="handleFileClick(doc)"
-                                                class="text-sm flex-1 truncate text-left text-blue-600 hover:underline transition"
+                                                class="text-sm truncate text-left text-blue-600 hover:underline transition"
                                                 x-text="doc.fileName"></button>
-                                        <span class="text-[11px] text-gray-400 shrink-0" x-text="doc.attachmentTypeName"></span>
-                                        @if($gpzuEnabled)
-                                        <template x-if="doc.fileName && doc.fileName.toLowerCase().includes('гпзу')">
-                                            <button @click.stop="openGpzuModal(doc)"
-                                                    class="text-blue-500 hover:text-blue-700 shrink-0"
-                                                    title="Информация ГПЗУ">
-                                                <span class="material-icons-outlined text-sm">info</span>
-                                            </button>
-                                        </template>
-                                        @endif
                                         <a :href="'https://torgi.gov.ru/new/file-store/v1/' + doc.fileId"
                                            @click.stop
-                                           class="text-gray-400 hover:text-gray-600 shrink-0"
+                                           class="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
                                            title="Скачать оригинал">
                                             <span class="material-icons-outlined text-sm">download</span>
                                         </a>
@@ -422,12 +419,11 @@
                                     <div class="flex items-center gap-2 py-0.5">
                                         <span class="material-icons-outlined text-xs text-gray-400 shrink-0">description</span>
                                         <button @click.stop="handleFileClick(doc)"
-                                                class="text-sm flex-1 truncate text-left text-blue-600 hover:underline transition"
+                                                class="text-sm truncate text-left text-blue-600 hover:underline transition"
                                                 x-text="doc.fileName"></button>
-                                        <span class="text-[11px] text-gray-400 shrink-0" x-text="doc.attachmentTypeName"></span>
                                         <a :href="'https://torgi.gov.ru/new/file-store/v1/' + doc.fileId"
                                            @click.stop
-                                           class="text-gray-400 hover:text-gray-600 shrink-0"
+                                           class="text-gray-400 hover:text-gray-600 shrink-0 ml-1"
                                            title="Скачать оригинал">
                                             <span class="material-icons-outlined text-sm">download</span>
                                         </a>
@@ -545,104 +541,55 @@
     @if($gpzuEnabled)
     <!-- ГПЗУ Modal -->
     <div x-show="gpzuModalOpen" x-cloak class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-4" @click.self="closeGpzuModal()">
-        <div class="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
-            <div class="flex items-center justify-between px-6 py-3 border-b shrink-0">
-                <h3 class="font-semibold text-gray-800 text-sm">ГПЗУ — информация</h3>
+        <div class="bg-white rounded-2xl w-full max-w-7xl h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-4 py-2 border-b shrink-0">
+                <div class="flex items-center gap-2">
+                    <h3 class="font-semibold text-gray-800 text-sm">ГПЗУ</h3>
+                    <!-- Drawing button -->
+                    <button x-show="gpzuDrawingPage"
+                            @click="gpzuNavigateTo(gpzuDrawingPage)"
+                            class="px-3 py-1 text-xs font-medium rounded-lg transition"
+                            :class="gpzuActiveNav === 'drawing' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
+                        <span class="material-icons-outlined text-xs align-text-bottom">map</span> Схема
+                    </button>
+                    <!-- Appendix button -->
+                    <button x-show="gpzuAppendixPage"
+                            @click="gpzuNavigateTo(gpzuAppendixPage)"
+                            class="px-3 py-1 text-xs font-medium rounded-lg transition"
+                            :class="gpzuActiveNav === 'appendix' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
+                        <span class="material-icons-outlined text-xs align-text-bottom">cable</span> Коммуникации
+                    </button>
+                    <!-- Loading indicator while OCR runs -->
+                    <template x-if="gpzuProcessing">
+                        <span class="flex items-center gap-1.5 text-xs text-gray-400">
+                            <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            Поиск страниц...
+                        </span>
+                    </template>
+                </div>
                 <button @click="closeGpzuModal()" class="p-1.5 hover:bg-gray-100 rounded-lg shrink-0">
-                    <span class="material-icons-outlined text-lg">close</span>
+                    <span class="material-icons-outlined text-gray-500 text-lg">close</span>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto p-6 space-y-6">
-                <!-- Processing with progress -->
-                <template x-if="gpzuProcessing">
-                    <div class="flex flex-col items-center justify-center py-12">
-                        <svg class="animate-spin h-10 w-10 text-blue-600 mb-4" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                        </svg>
-                        <template x-if="gpzuProgress">
-                            <div class="text-center">
-                                <p class="text-sm font-medium text-gray-700" x-text="gpzuProgress.message || 'Обработка...'"/>
-                                <template x-if="gpzuProgress.total > 0">
-                                    <div class="mt-3 w-64">
-                                        <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                            <span>Страница <span x-text="gpzuProgress.current"></span> из <span x-text="gpzuProgress.total"></span></span>
-                                            <span x-text="Math.round((gpzuProgress.current / gpzuProgress.total) * 100) + '%'"/>
-                                        </div>
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                                 :style="'width: ' + Math.round((gpzuProgress.current / gpzuProgress.total) * 100) + '%'"/>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                        <template x-if="!gpzuProgress">
-                            <p class="text-sm text-gray-500">Запуск обработки...</p>
-                        </template>
-                        <p class="text-xs text-gray-400 mt-3">Это может занять несколько минут. Можете закрыть окно — обработка продолжится.</p>
+
+            <!-- PDF Viewer -->
+            <div class="flex-1 bg-gray-200 relative">
+                <template x-if="gpzuPdfReady">
+                    <iframe :src="gpzuPdfUrl"
+                            class="w-full h-full border-0"></iframe>
+                </template>
+                <template x-if="!gpzuPdfReady && !gpzuError">
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <svg class="animate-spin h-8 w-8 text-blue-500 mb-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        <p class="text-sm text-gray-500">Загрузка PDF...</p>
                     </div>
                 </template>
-
-                <!-- Error -->
                 <template x-if="gpzuError">
-                    <div class="text-center py-12">
+                    <div class="flex flex-col items-center justify-center h-full">
                         <span class="material-icons-outlined text-4xl text-red-400">error_outline</span>
-                        <p class="mt-3 text-sm font-medium text-red-600" x-text="gpzuError"></p>
-                        <button @click="closeGpzuModal()" class="mt-4 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition">
-                            Закрыть
-                        </button>
-                    </div>
-                </template>
-
-                <!-- No data (and not processing) -->
-                <template x-if="!gpzuProcessing && !gpzuError && !gpzuData">
-                    <div class="text-center py-12 text-gray-400">
-                        <span class="material-icons-outlined text-4xl">search_off</span>
-                        <p class="mt-2 text-sm">Данные ГПЗУ не найдены</p>
-                    </div>
-                </template>
-
-                <!-- Results -->
-                <template x-if="!gpzuLoading && gpzuData">
-                    <div class="space-y-6">
-                        <!-- Permitted Uses -->
-                        <template x-if="gpzuData.permitted_uses && gpzuData.permitted_uses.length > 0">
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Основные виды разрешенного использования</h4>
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <template x-for="(item, idx) in gpzuData.permitted_uses" :key="idx">
-                                        <div class="flex items-baseline gap-2 py-0.5 text-sm">
-                                            <span class="text-gray-400 text-xs shrink-0" x-text="idx + 1 + '.'"></span>
-                                            <span class="text-gray-700" x-text="item.name"></span>
-                                            <span class="text-gray-400 text-xs" x-text="item.code"></span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- Appendix PDF (приложения + газоснабжение) -->
-                        <template x-if="gpzuData.appendix_pdf">
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Приложения (инженерные сети + газоснабжение)</h4>
-                                <div class="border border-gray-200 rounded-lg overflow-hidden">
-                                    <iframe :src="'/api/lots/' + selectedLot.id + '/gpzu/appendix'"
-                                            class="w-full h-[700px] border-0" loading="lazy"></iframe>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- Drawing Page -->
-                        <template x-if="gpzuData.drawing_page">
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Чертеж градостроительного плана</h4>
-                                <div class="border border-gray-200 rounded-lg overflow-hidden">
-                                    <iframe :src="'/api/lots/' + selectedLot.id + '/gpzu/page/' + gpzuData.drawing_page"
-                                            class="w-full h-[600px] border-0" loading="lazy"></iframe>
-                                </div>
-                            </div>
-                        </template>
+                        <p class="mt-2 text-sm text-red-600" x-text="gpzuError"></p>
+                        <button @click="closeGpzuModal()" class="mt-3 px-4 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg transition">Закрыть</button>
                     </div>
                 </template>
             </div>
@@ -676,14 +623,17 @@ function lotApp() {
         editingComment: false,
         commentText: '',
         openDropdownId: null,
-        gpzuData: null,
-        gpzuLoading: false,
         gpzuModalOpen: false,
         gpzuProcessing: false,
-        gpzuProgress: null,
         gpzuError: null,
         gpzuPolling: null,
         gpzuLotId: null,
+        gpzuFileId: null,
+        gpzuPdfReady: false,
+        gpzuPdfUrl: '',
+        gpzuDrawingPage: null,
+        gpzuAppendixPage: null,
+        gpzuActiveNav: null,
         countdownIntervals: {},
         terrainMap: null,
         yandexMap: null,
@@ -1191,24 +1141,36 @@ function lotApp() {
         },
 
         async openGpzuModal(doc) {
-            // Prevent duplicate requests
             if (this.gpzuProcessing) return;
 
             this.gpzuModalOpen = true;
-            this.gpzuLoading = true;
-            this.gpzuData = null;
             this.gpzuError = null;
-            this.gpzuProgress = null;
+            this.gpzuProcessing = false;
+            this.gpzuPdfReady = false;
+            this.gpzuPdfUrl = '';
+            this.gpzuDrawingPage = null;
+            this.gpzuAppendixPage = null;
+            this.gpzuActiveNav = null;
             this.gpzuLotId = this.selectedLot.id;
+            this.gpzuFileId = doc.fileId;
+
+            // Show PDF directly from torgi
+            this.gpzuPdfUrl = `https://torgi.gov.ru/new/file-store/v1/${doc.fileId}`;
+            this.gpzuPdfReady = true;
 
             try {
-                // First try to get existing data
-                let res = await fetch(`/api/lots/${this.selectedLot.id}/gpzu`);
+                // Check if we already have page numbers
+                let res = await fetch(`/api/lots/${this.selectedLot.id}/gpzu/pages`);
                 let data = await res.json();
 
-                if (data.gpzu) {
-                    this.gpzuData = data.gpzu;
-                    this.gpzuLoading = false;
+                if (data.status === 'done') {
+                    this.gpzuDrawingPage = data.drawing_page;
+                    this.gpzuAppendixPage = data.appendix_page;
+                    return;
+                }
+
+                if (data.status === 'error') {
+                    this.gpzuError = data.error;
                     return;
                 }
 
@@ -1228,29 +1190,26 @@ function lotApp() {
                 });
                 data = await res.json();
 
-                if (data.status === 'done' && data.gpzu) {
-                    this.gpzuData = data.gpzu;
+                if (data.status === 'done') {
+                    this.gpzuDrawingPage = data.drawing_page;
+                    this.gpzuAppendixPage = data.appendix_page;
                     this.gpzuProcessing = false;
-                    this.gpzuLoading = false;
                     return;
                 }
 
                 if (data.status === 'error') {
                     this.gpzuError = data.error;
                     this.gpzuProcessing = false;
-                    this.gpzuLoading = false;
                     return;
                 }
 
-                // Start polling for status
-                this.gpzuProgress = data.progress;
+                // Start polling for page numbers
                 this.startGpzuPolling();
 
             } catch (e) {
                 console.error('Failed to process ГПЗУ', e);
                 this.gpzuError = 'Ошибка подключения к серверу';
                 this.gpzuProcessing = false;
-                this.gpzuLoading = false;
             }
         },
 
@@ -1258,17 +1217,16 @@ function lotApp() {
             if (this.gpzuPolling) clearInterval(this.gpzuPolling);
             this.gpzuPolling = setInterval(async () => {
                 try {
-                    const res = await fetch(`/api/lots/${this.gpzuLotId}/gpzu/status`);
+                    const res = await fetch(`/api/lots/${this.gpzuLotId}/gpzu/pages`);
                     const data = await res.json();
 
                     if (data.status === 'done') {
-                        this.gpzuData = data.gpzu;
+                        this.gpzuDrawingPage = data.drawing_page;
+                        this.gpzuAppendixPage = data.appendix_page;
                         this.stopGpzuPolling();
                     } else if (data.status === 'error') {
                         this.gpzuError = data.error;
                         this.stopGpzuPolling();
-                    } else if (data.status === 'processing') {
-                        this.gpzuProgress = data.progress;
                     }
                 } catch (e) {
                     console.error('ГПЗУ polling error:', e);
@@ -1282,16 +1240,25 @@ function lotApp() {
                 this.gpzuPolling = null;
             }
             this.gpzuProcessing = false;
-            this.gpzuLoading = false;
+        },
+
+        gpzuNavigateTo(page) {
+            if (!page) return;
+            this.gpzuActiveNav = page === this.gpzuDrawingPage ? 'drawing' : 'appendix';
+            this.gpzuPdfUrl = `https://torgi.gov.ru/new/file-store/v1/${this.gpzuFileId}#page=${page}`;
         },
 
         closeGpzuModal() {
             this.stopGpzuPolling();
             this.gpzuModalOpen = false;
-            this.gpzuData = null;
             this.gpzuError = null;
-            this.gpzuProgress = null;
+            this.gpzuPdfReady = false;
+            this.gpzuPdfUrl = '';
+            this.gpzuDrawingPage = null;
+            this.gpzuAppendixPage = null;
+            this.gpzuActiveNav = null;
             this.gpzuLotId = null;
+            this.gpzuFileId = null;
         },
 
         toggleDropdown(lotId) {
@@ -1319,6 +1286,8 @@ function lotApp() {
                 window.location.href = this._getDirectTorgiUrl(doc);
             } else if (this._isImageFile(doc)) {
                 window.open('https://torgi.gov.ru/new/image-preview/v1/' + doc.fileId + '?disposition=inline', '_blank');
+            } else if (@js($gpzuEnabled) && doc.fileName && doc.fileName.toLowerCase().includes('гпзу')) {
+                this.openGpzuModal(doc);
             } else {
                 this.openDocPreview(doc);
             }

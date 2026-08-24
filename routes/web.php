@@ -21,8 +21,7 @@ Route::post('/settings', [LotController::class, 'saveSettings'])->name('lots.sav
 // ГПЗУ routes (conditionally registered)
 if (config('gpzu.enabled', true)) {
     Route::get('/api/lots/{id}/gpzu', [GpzuController::class, 'getData'])->name('lots.gpzu-data');
+    Route::get('/api/lots/{id}/gpzu/pages', [GpzuController::class, 'pages'])->name('lots.gpzu-pages');
     Route::post('/api/gpzu/process', [GpzuController::class, 'process'])->name('lots.gpzu-process');
     Route::get('/api/lots/{id}/gpzu/status', [GpzuController::class, 'status'])->name('lots.gpzu-status');
-    Route::get('/api/lots/{id}/gpzu/page/{page}', [GpzuController::class, 'pdfPage'])->name('lots.gpzu-page');
-    Route::get('/api/lots/{id}/gpzu/appendix', [GpzuController::class, 'appendixPdf'])->name('lots.gpzu-appendix');
 }

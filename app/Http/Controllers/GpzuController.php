@@ -6,7 +6,6 @@ use App\GpzuProcessingStatus;
 use App\GpzuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GpzuController extends Controller
 {
@@ -26,6 +25,48 @@ class GpzuController extends Controller
         $data = $this->gpzuService->getDataForLot($id);
 
         return response()->json(['gpzu' => $data]);
+    }
+
+    /**
+     * Get page numbers for drawing and appendix (triggers processing if needed).
+     */
+    public function pages(string $id): JsonResponse
+    {
+        if (! config('gpzu.enabled', true)) {
+            return response()->json(['error' => 'Функция ГПЗУ отключена'], 404);
+        }
+
+        $data = $this->gpzuService->getDataForLot($id);
+
+        if ($data) {
+            return response()->json([
+                'status' => 'done',
+                'drawing_page' => $data->drawing_page,
+                'appendix_page' => $data->appendix_page,
+            ]);
+        }
+
+        // Check if processing is running
+        $status = new GpzuProcessingStatus($id);
+        $currentStatus = $status->getStatus();
+
+        if ($status->isProcessing()) {
+            return response()->json([
+                'status' => 'processing',
+                'progress' => $currentStatus,
+            ]);
+        }
+
+        if ($currentStatus && $currentStatus['step'] === 'error') {
+            return response()->json([
+                'status' => 'error',
+                'error' => $currentStatus['message'],
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'idle',
+        ]);
     }
 
     /**
@@ -51,7 +92,8 @@ class GpzuController extends Controller
         if ($existing) {
             return response()->json([
                 'status' => 'done',
-                'gpzu' => $existing,
+                'drawing_page' => $existing->drawing_page,
+                'appendix_page' => $existing->appendix_page,
             ]);
         }
 
@@ -94,7 +136,8 @@ class GpzuController extends Controller
 
             return response()->json([
                 'status' => 'done',
-                'gpzu' => $data,
+                'drawing_page' => $data?->drawing_page,
+                'appendix_page' => $data?->appendix_page,
             ]);
         }
 
@@ -116,88 +159,13 @@ class GpzuController extends Controller
         if ($data) {
             return response()->json([
                 'status' => 'done',
-                'gpzu' => $data,
+                'drawing_page' => $data->drawing_page,
+                'appendix_page' => $data->appendix_page,
             ]);
         }
 
         return response()->json([
             'status' => 'idle',
-        ]);
-    }
-
-    /**
-     * Serve an extracted PDF page from ГПЗУ.
-     */
-    public function pdfPage(Request $request, string $id, int $page): StreamedResponse
-    {
-        if (! config('gpzu.enabled', true)) {
-            abort(404);
-        }
-
-        $data = $this->gpzuService->getDataForLot($id);
-        if (! $data) {
-            abort(404, 'ГПЗУ не обработано');
-        }
-
-        $pdfPath = $this->gpzuService->getLocalPdfPath($data->file_id);
-        if (! $pdfPath) {
-            abort(404, 'PDF файл не найден');
-        }
-
-        $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
-        $outputPath = $storagePath.'/page_'.md5($pdfPath).'_'.$page.'.pdf';
-
-        if (! file_exists($outputPath)) {
-            $command = sprintf(
-                'gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dFirstPage=%d -dLastPage=%d -sOutputFile=%s %s 2>&1',
-                $page,
-                $page,
-                escapeshellarg($outputPath),
-                escapeshellarg($pdfPath),
-            );
-            exec($command, $output, $returnCode);
-
-            if ($returnCode !== 0 || ! file_exists($outputPath)) {
-                abort(404, 'Страница не найдена');
-            }
-        }
-
-        return response()->stream(function () use ($outputPath) {
-            readfile($outputPath);
-        }, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline',
-            'Cache-Control' => 'public, max-age=86400',
-        ]);
-    }
-
-    /**
-     * Serve the combined appendix PDF (приложения + газоснабжение).
-     */
-    public function appendixPdf(string $id): StreamedResponse
-    {
-        if (! config('gpzu.enabled', true)) {
-            abort(404);
-        }
-
-        $data = $this->gpzuService->getDataForLot($id);
-        if (! $data || ! $data->appendix_pdf) {
-            abort(404, 'Приложения не найдены');
-        }
-
-        $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
-        $fullPath = $storagePath.'/'.$data->appendix_pdf;
-
-        if (! file_exists($fullPath)) {
-            abort(404, 'Файл приложений не найден');
-        }
-
-        return response()->stream(function () use ($fullPath) {
-            readfile($fullPath);
-        }, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline',
-            'Cache-Control' => 'public, max-age=86400',
         ]);
     }
 

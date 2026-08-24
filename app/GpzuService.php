@@ -4,20 +4,14 @@ namespace App;
 
 use App\Models\GpzuData;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class GpzuService
 {
-    private const TORGİ_FILE_URL = 'https://torgi.gov.ru/new/file-store/v1/';
-
     public function __construct(
         private readonly DocumentService $documentService,
     ) {}
 
-    /**
-     * Find ГПЗУ file in lot attachments.
-     */
     public function findGpzuFile(array $attachments): ?array
     {
         foreach ($attachments as $attachment) {
@@ -30,18 +24,13 @@ class GpzuService
         return null;
     }
 
-    /**
-     * Check if ГПЗУ data already exists for a lot.
-     */
     public function getDataForLot(string $lotId): ?GpzuData
     {
         return GpzuData::where('lot_id', $lotId)->first();
     }
 
     /**
-     * Process ГПЗУ file with progress reporting.
-     *
-     * @return array{success: bool, data?: GpzuData, error?: string}
+     * Process ГПЗУ: download via DocumentService, OCR, find page numbers.
      */
     public function processWithProgress(string $lotId, array $gpzuFile): array
     {
@@ -63,9 +52,9 @@ class GpzuService
         $fileId = $gpzuFile['fileId'];
         $fileName = $gpzuFile['fileName'];
 
-        // Step 1: Download
+        // Step 1: Download via DocumentService (single storage location)
         $status->setStep('download', 'Скачивание файла...');
-        $pdfPath = $this->downloadPdf($fileId, $fileName);
+        $pdfPath = $this->documentService->getFileForPreview($fileId, $fileName);
         if (! $pdfPath || ! file_exists($pdfPath)) {
             $errorMsg = 'Не удалось скачать файл ГПЗУ с сервера торгов';
             Log::error('ГПЗУ: Failed to download PDF', ['file_id' => $fileId]);
@@ -87,7 +76,7 @@ class GpzuService
         $status->setStep('ocr', 'Распознавание текста (OCR)...', 0, $pageCount);
         $pages = $this->ocrAllPages($pdfPath, $status);
         if (empty($pages)) {
-            $errorMsg = 'OCR не распознал текст ни на одной странице. Возможно, файл не является сканом.';
+            $errorMsg = 'OCR не распознал текст ни на одной странице.';
             Log::error('ГПЗУ: OCR produced no results', ['file_id' => $fileId]);
 
             return ['success' => false, 'error' => $errorMsg];
@@ -95,29 +84,17 @@ class GpzuService
 
         $totalChars = array_sum(array_map('mb_strlen', $pages));
         if ($totalChars < 100) {
-            $errorMsg = 'Распознано слишком мало текста ('.$totalChars.' символов). Файл может быть повреждён.';
-            Log::warning('ГПЗУ: OCR produced very little text', [
-                'file_id' => $fileId,
-                'total_chars' => $totalChars,
-            ]);
+            $errorMsg = 'Распознано слишком мало текста ('.$totalChars.' символов).';
+            Log::warning('ГПЗУ: OCR produced very little text', ['total_chars' => $totalChars]);
 
             return ['success' => false, 'error' => $errorMsg];
         }
 
-        // Step 4: Parse
+        // Step 4: Parse — find page numbers
         $status->setStep('parse', 'Анализ содержимого...');
         $permittedUses = $this->parsePermittedUses($pages);
         $drawingPage = $this->findDrawingPage($pages);
-
-        // Find appendix page range and gas page, extract combined PDF
-        $appendixPdfPath = null;
-        $appendixPage = $this->findAppendixPage($pages);
-        $gasPage = $this->findGasPage($pages);
-
-        if ($appendixPage !== null && $gasPage !== null && $gasPage > $appendixPage) {
-            $status->setStep('extract', 'Извлечение страниц приложений...');
-            $appendixPdfPath = $this->extractAppendixPdf($pdfPath, $appendixPage + 1, $gasPage);
-        }
+        $appendixPage = $this->findFirstAppendixPage($pages);
 
         // Step 5: Save
         $status->setStep('save', 'Сохранение результатов...');
@@ -126,11 +103,10 @@ class GpzuService
             'file_id' => $fileId,
             'file_name' => $fileName,
             'permitted_uses' => $permittedUses,
-            'appendix_pdf' => $appendixPdfPath,
+            'appendix_page' => $appendixPage,
             'drawing_page' => $drawingPage,
         ]);
 
-        // Step 6: Done
         $status->setComplete([
             'id' => $data->id,
             'lot_id' => $data->lot_id,
@@ -139,50 +115,6 @@ class GpzuService
         return ['success' => true, 'data' => $data];
     }
 
-    /**
-     * Download PDF from torgi.gov.ru.
-     */
-    private function downloadPdf(string $fileId, string $fileName): ?string
-    {
-        $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
-        File::makeDirectory($storagePath, 0755, true, true);
-
-        $localPath = $storagePath.'/'.$fileId.'.pdf';
-
-        if (File::exists($localPath)) {
-            return $localPath;
-        }
-
-        try {
-            $response = Http::timeout(120)
-                ->withOptions(['verify' => false])
-                ->get(self::TORGİ_FILE_URL.$fileId);
-
-            if ($response->failed()) {
-                Log::error('ГПЗУ: Download failed', [
-                    'file_id' => $fileId,
-                    'status' => $response->status(),
-                ]);
-
-                return null;
-            }
-
-            File::put($localPath, $response->body());
-
-            return $localPath;
-        } catch (\Exception $e) {
-            Log::error('ГПЗУ: Download exception', [
-                'file_id' => $fileId,
-                'message' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
-    }
-
-    /**
-     * OCR all pages of the PDF with progress reporting.
-     */
     private function ocrAllPages(string $pdfPath, GpzuProcessingStatus $status): array
     {
         $pageCount = $this->getPdfPageCount($pdfPath);
@@ -190,7 +122,8 @@ class GpzuService
             return [];
         }
 
-        $tempDir = config('gpzu.temp_dir', storage_path('app/gpzu'));
+        $tempDir = storage_path('app/gpzu');
+        File::makeDirectory($tempDir, 0755, true, true);
         $ocrDir = $tempDir.'/ocr_'.md5($pdfPath);
         File::makeDirectory($ocrDir, 0755, true, true);
 
@@ -314,30 +247,21 @@ class GpzuService
         return ! empty($items) ? $items : null;
     }
 
-    /**
-     * Find the page number where "Приложения" appears.
-     */
-    private function findAppendixPage(array $pages): ?int
+    private function findFirstAppendixPage(array $pages): ?int
     {
         ksort($pages);
-        foreach ($pages as $pageNum => $text) {
-            if (str_contains(mb_strtolower($text), 'приложения')) {
-                return $pageNum;
-            }
-        }
+        $foundAppendix = false;
 
-        return null;
-    }
-
-    /**
-     * Find the page containing "газоснабжение".
-     */
-    private function findGasPage(array $pages): ?int
-    {
         foreach ($pages as $pageNum => $text) {
-            if (str_contains(mb_strtolower($text), 'газоснабжение')) {
-                return $pageNum;
+            if (! $foundAppendix) {
+                if (str_contains(mb_strtolower($text), 'приложения')) {
+                    $foundAppendix = true;
+                }
+
+                continue;
             }
+
+            return $pageNum;
         }
 
         return null;
@@ -353,52 +277,5 @@ class GpzuService
         }
 
         return null;
-    }
-
-    /**
-     * Extract pages from firstPage to lastPage into a combined PDF using Ghostscript.
-     */
-    private function extractAppendixPdf(string $pdfPath, int $firstPage, int $lastPage): ?string
-    {
-        $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
-        File::makeDirectory($storagePath, 0755, true, true);
-
-        $hash = md5($pdfPath.'_appendix_'.$firstPage.'_'.$lastPage);
-        $filename = 'appendix_'.$hash.'.pdf';
-        $outputPath = $storagePath.'/'.$filename;
-
-        if (File::exists($outputPath)) {
-            return $filename;
-        }
-
-        $command = sprintf(
-            'gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dFirstPage=%d -dLastPage=%d -sOutputFile=%s %s 2>&1',
-            $firstPage,
-            $lastPage,
-            escapeshellarg($outputPath),
-            escapeshellarg($pdfPath),
-        );
-
-        exec($command, $output, $returnCode);
-
-        if ($returnCode !== 0 || ! File::exists($outputPath)) {
-            Log::error('ГПЗУ: Failed to extract appendix PDF', [
-                'first_page' => $firstPage,
-                'last_page' => $lastPage,
-                'output' => implode("\n", $output),
-            ]);
-
-            return null;
-        }
-
-        return $filename;
-    }
-
-    public function getLocalPdfPath(string $fileId): ?string
-    {
-        $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
-        $path = $storagePath.'/'.$fileId.'.pdf';
-
-        return File::exists($path) ? $path : null;
     }
 }
