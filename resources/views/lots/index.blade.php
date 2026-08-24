@@ -446,14 +446,14 @@
 
                         <div x-show="activeTab === 'google'" class="map-container border border-t-0 border-gray-200 rounded-b-xl">
                             <iframe x-show="lotPolygon && lotPolygon.center_lat && lotPolygon.center_lon"
-                                    :src="'https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=' + lotPolygon.center_lat + ',' + lotPolygon.center_lon + '&zoom=20&maptype=satellite'"
+                                    :src="'https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=' + lotPolygon.center_lat + ',' + lotPolygon.center_lon + '&zoom=18&maptype=satellite'"
                                     class="w-full h-full border-0" allowfullscreen loading="lazy"></iframe>
                             <div x-show="!lotPolygon || !lotPolygon.center_lat || !lotPolygon.center_lon" class="w-full h-full flex items-center justify-center text-gray-400">Координаты не определены</div>
                         </div>
                         <div x-show="activeTab === 'yandex'" class="map-container border border-t-0 border-gray-200 rounded-b-xl relative">
                             <div id="yandex-map" style="width:100%;height:100%;"></div>
                             <a x-show="lotPolygon && lotPolygon.center_lat && lotPolygon.center_lon"
-                               :href="'https://yandex.ru/maps/?ll=' + lotPolygon.center_lon + '%2C' + lotPolygon.center_lat + '&z=19&l=sat%2Cskl'"
+                               :href="'https://yandex.ru/maps/?ll=' + lotPolygon.center_lon + '%2C' + lotPolygon.center_lat + '&z=18&l=sat%2Cskl'"
                                target="_blank" rel="noopener"
                                class="absolute top-2 left-2 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-black text-xs font-semibold rounded-lg shadow-sm transition-colors">
                                 <span class="material-icons-outlined text-sm">open_in_new</span>
@@ -569,7 +569,7 @@ function lotApp() {
             if (!this.lotPolygon || !this.lotPolygon.mercator_x || !this.lotPolygon.mercator_y) return '';
             const mx = this.lotPolygon.mercator_x;
             const my = this.lotPolygon.mercator_y;
-            return 'https://nspd.gov.ru/cadastral-price/search?zoom=19&coordinate_x=' + mx + '&coordinate_y=' + my + '&baseLayerId=36344';
+            return 'https://nspd.gov.ru/cadastral-price/search?zoom=18&coordinate_x=' + mx + '&coordinate_y=' + my + '&baseLayerId=36344';
         },
         mapsInitialized: false,
 
@@ -732,9 +732,20 @@ function lotApp() {
             this.activeTab = tab;
             await this.$nextTick();
             if (this.selectedLot) {
-                if (this.terrainMap) this.terrainMap.resize();
-                if (this.yandexMap) this.yandexMap.resize();
-                this.initMaps();
+                const lat = this.selectedLot.lat;
+                const lon = this.selectedLot.lon;
+                if (!lat || !lon) return;
+                const center = this.lotPolygon ? this.calculatePolygonCenter(this.lotPolygon.coordinates) : [lon, lat];
+
+                if (tab === 'terrain' && this.terrainMap) {
+                    this.terrainMap.resize();
+                    this.terrainMap.flyTo({ center: center, zoom: 17, pitch: 70, duration: 800 });
+                } else if (tab === 'yandex' && this.yandexMap) {
+                    this.yandexMap.resize();
+                    this.yandexMap.flyTo({ center: center, zoom: 17, duration: 800 });
+                } else {
+                    this.initMaps();
+                }
             }
         },
 
@@ -886,7 +897,7 @@ function lotApp() {
                 this.yandexMap = new maplibregl.Map({
                     container: 'yandex-map',
                     center: center,
-                    zoom: 14,
+                    zoom: 17,
                     style: {
                         version: 8,
                         sources: {
