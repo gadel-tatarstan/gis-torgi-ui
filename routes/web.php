@@ -24,4 +24,5 @@ if (config('gpzu.enabled', true)) {
     Route::post('/api/gpzu/process', [GpzuController::class, 'process'])->name('lots.gpzu-process');
     Route::get('/api/lots/{id}/gpzu/status', [GpzuController::class, 'status'])->name('lots.gpzu-status');
     Route::get('/api/lots/{id}/gpzu/page/{page}', [GpzuController::class, 'pdfPage'])->name('lots.gpzu-page');
+    Route::get('/api/lots/{id}/gpzu/appendix', [GpzuController::class, 'appendixPdf'])->name('lots.gpzu-appendix');
 }

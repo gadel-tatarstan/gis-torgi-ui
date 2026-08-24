@@ -26,7 +26,9 @@ class LotController extends Controller
         $etps = Etp::orderBy('order')->get();
         $yandexApiKey = config('services.yandex.maps_api_key', '');
 
-        return view('lots.index', compact('etps', 'yandexApiKey'));
+        $gpzuEnabled = config('gpzu.enabled', true);
+
+        return view('lots.index', compact('etps', 'yandexApiKey', 'gpzuEnabled'));
     }
 
     public function fetchLots(Request $request): JsonResponse

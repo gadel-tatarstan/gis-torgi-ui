@@ -11,13 +11,6 @@ class GpzuService
 {
     private const TORGİ_FILE_URL = 'https://torgi.gov.ru/new/file-store/v1/';
 
-    private const UTILITY_NETWORK_TYPES = [
-        'Теплоснабжение',
-        'Водоотведение',
-        'Холодное водоснабжение',
-        'Электроснабжение',
-    ];
-
     public function __construct(
         private readonly DocumentService $documentService,
     ) {}
@@ -54,13 +47,11 @@ class GpzuService
     {
         $status = new GpzuProcessingStatus($lotId);
 
-        // Check if already processed
         $existing = $this->getDataForLot($lotId);
         if ($existing) {
             return ['success' => true, 'data' => $existing];
         }
 
-        // Check system requirements
         $missing = GpzuProcessingStatus::checkRequirements();
         if (! empty($missing)) {
             $errorMsg = 'Отсутствуют системные утилиты: '.implode(', ', $missing);
@@ -102,7 +93,6 @@ class GpzuService
             return ['success' => false, 'error' => $errorMsg];
         }
 
-        // Check if OCR produced meaningful content
         $totalChars = array_sum(array_map('mb_strlen', $pages));
         if ($totalChars < 100) {
             $errorMsg = 'Распознано слишком мало текста ('.$totalChars.' символов). Файл может быть повреждён.';
@@ -117,9 +107,17 @@ class GpzuService
         // Step 4: Parse
         $status->setStep('parse', 'Анализ содержимого...');
         $permittedUses = $this->parsePermittedUses($pages);
-        $utilityTables = $this->parseUtilityTables($pages);
-        $gasPage = $this->findGasPage($pages);
         $drawingPage = $this->findDrawingPage($pages);
+
+        // Find appendix page range and gas page, extract combined PDF
+        $appendixPdfPath = null;
+        $appendixPage = $this->findAppendixPage($pages);
+        $gasPage = $this->findGasPage($pages);
+
+        if ($appendixPage !== null && $gasPage !== null && $gasPage > $appendixPage) {
+            $status->setStep('extract', 'Извлечение страниц приложений...');
+            $appendixPdfPath = $this->extractAppendixPdf($pdfPath, $appendixPage + 1, $gasPage);
+        }
 
         // Step 5: Save
         $status->setStep('save', 'Сохранение результатов...');
@@ -128,8 +126,7 @@ class GpzuService
             'file_id' => $fileId,
             'file_name' => $fileName,
             'permitted_uses' => $permittedUses,
-            'utility_tables' => $utilityTables,
-            'gas_page' => $gasPage,
+            'appendix_pdf' => $appendixPdfPath,
             'drawing_page' => $drawingPage,
         ]);
 
@@ -200,7 +197,6 @@ class GpzuService
         $dpi = config('gpzu.ocr_dpi', 300);
         $lang = config('gpzu.ocr_lang', 'rus');
 
-        // Convert all pages to images
         $prefix = $ocrDir.'/page';
         exec(sprintf(
             'pdftoppm -f 1 -l %d -png -r %d %s %s 2>&1',
@@ -229,9 +225,6 @@ class GpzuService
         return $pages;
     }
 
-    /**
-     * OCR a single page image.
-     */
     private function ocrPage(string $imagePath, string $lang): string
     {
         $command = sprintf(
@@ -245,9 +238,6 @@ class GpzuService
         return $returnCode === 0 ? implode("\n", $output) : '';
     }
 
-    /**
-     * Get PDF page count using pdfinfo.
-     */
     private function getPdfPageCount(string $pdfPath): int
     {
         exec(sprintf('pdfinfo %s 2>/dev/null', escapeshellarg($pdfPath)), $output, $returnCode);
@@ -265,9 +255,6 @@ class GpzuService
         return 0;
     }
 
-    /**
-     * Parse permitted uses from OCR text.
-     */
     private function parsePermittedUses(array $pages): ?array
     {
         $fullText = '';
@@ -328,88 +315,23 @@ class GpzuService
     }
 
     /**
-     * Parse utility connection tables from OCR text.
+     * Find the page number where "Приложения" appears.
      */
-    private function parseUtilityTables(array $pages): ?array
+    private function findAppendixPage(array $pages): ?int
     {
-        $tables = [];
-        $foundAppendix = false;
-
         ksort($pages);
-
         foreach ($pages as $pageNum => $text) {
-            $lowerText = mb_strtolower($text);
-
-            if (str_contains($lowerText, 'приложения')) {
-                $foundAppendix = true;
-
-                continue;
-            }
-
-            if (! $foundAppendix) {
-                continue;
-            }
-
-            $networkType = $this->detectNetworkType($text);
-            if ($networkType === null) {
-                continue;
-            }
-
-            $connectionAvailable = $this->extractConnectionInfo($text);
-            $maxLoad = $this->extractMaxLoad($text);
-
-            $tables[] = [
-                'network_type' => $networkType,
-                'connection_available' => $connectionAvailable,
-                'max_load' => $maxLoad,
-                'page' => $pageNum,
-            ];
-        }
-
-        return ! empty($tables) ? $tables : null;
-    }
-
-    private function detectNetworkType(string $text): ?string
-    {
-        $lowerText = mb_strtolower($text);
-
-        foreach (self::UTILITY_NETWORK_TYPES as $type) {
-            if (str_contains($lowerText, mb_strtolower($type))) {
-                return $type;
+            if (str_contains(mb_strtolower($text), 'приложения')) {
+                return $pageNum;
             }
         }
 
         return null;
     }
 
-    private function extractConnectionInfo(string $text): ?string
-    {
-        $pattern = '/сведения\s+о\s+наличии\s+или\s+об\s+отсутствии\s+технической\s+возможности\s+подключения\s*\n?\s*(.+)/iu';
-        if (preg_match($pattern, mb_strtolower($text), $matches)) {
-            return trim($matches[1]);
-        }
-
-        if (preg_match('/сведения\s+о\s+наличии.*?подключения\s*\n\s*(Отсутствует|Имеется)/ius', $text, $matches)) {
-            return trim($matches[1]);
-        }
-
-        return null;
-    }
-
-    private function extractMaxLoad(string $text): ?string
-    {
-        $pattern = '/сведения\s+о\s+максимальной\s+нагрузке\s+в\s+возможных\s+точках\s*\n?\s*подключения.*?\n?\s*(.+)/iu';
-        if (preg_match($pattern, mb_strtolower($text), $matches)) {
-            return trim($matches[1]);
-        }
-
-        if (preg_match('/максимальной\s+нагрузке.*?подключения.*?\n\s*(Отсутствует|[\s\S]{5,80}?)(?:\n|Срок)/iu', $text, $matches)) {
-            return trim($matches[1]);
-        }
-
-        return null;
-    }
-
+    /**
+     * Find the page containing "газоснабжение".
+     */
     private function findGasPage(array $pages): ?int
     {
         foreach ($pages as $pageNum => $text) {
@@ -433,21 +355,26 @@ class GpzuService
         return null;
     }
 
-    public function extractPdfPage(string $pdfPath, int $pageNumber): ?string
+    /**
+     * Extract pages from firstPage to lastPage into a combined PDF using Ghostscript.
+     */
+    private function extractAppendixPdf(string $pdfPath, int $firstPage, int $lastPage): ?string
     {
         $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
         File::makeDirectory($storagePath, 0755, true, true);
 
-        $outputPath = $storagePath.'/page_'.md5($pdfPath).'_'.$pageNumber.'.pdf';
+        $hash = md5($pdfPath.'_appendix_'.$firstPage.'_'.$lastPage);
+        $filename = 'appendix_'.$hash.'.pdf';
+        $outputPath = $storagePath.'/'.$filename;
 
         if (File::exists($outputPath)) {
-            return $outputPath;
+            return $filename;
         }
 
         $command = sprintf(
             'gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dFirstPage=%d -dLastPage=%d -sOutputFile=%s %s 2>&1',
-            $pageNumber,
-            $pageNumber,
+            $firstPage,
+            $lastPage,
             escapeshellarg($outputPath),
             escapeshellarg($pdfPath),
         );
@@ -455,15 +382,16 @@ class GpzuService
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0 || ! File::exists($outputPath)) {
-            Log::error('ГПЗУ: Failed to extract PDF page', [
-                'page' => $pageNumber,
+            Log::error('ГПЗУ: Failed to extract appendix PDF', [
+                'first_page' => $firstPage,
+                'last_page' => $lastPage,
                 'output' => implode("\n", $output),
             ]);
 
             return null;
         }
 
-        return $outputPath;
+        return $filename;
     }
 
     public function getLocalPdfPath(string $fileId): ?string

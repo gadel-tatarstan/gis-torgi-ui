@@ -11,13 +11,11 @@ class GpzuData extends Model
         'file_id',
         'file_name',
         'permitted_uses',
-        'utility_tables',
-        'gas_page',
+        'appendix_pdf',
         'drawing_page',
     ];
 
     protected $casts = [
         'permitted_uses' => 'array',
-        'utility_tables' => 'array',
     ];
 }

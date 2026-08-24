@@ -393,6 +393,7 @@
                                                 class="text-sm flex-1 truncate text-left text-blue-600 hover:underline transition"
                                                 x-text="doc.fileName"></button>
                                         <span class="text-[11px] text-gray-400 shrink-0" x-text="doc.attachmentTypeName"></span>
+                                        @if($gpzuEnabled)
                                         <template x-if="doc.fileName && doc.fileName.toLowerCase().includes('гпзу')">
                                             <button @click.stop="openGpzuModal(doc)"
                                                     class="text-blue-500 hover:text-blue-700 shrink-0"
@@ -400,6 +401,7 @@
                                                 <span class="material-icons-outlined text-sm">info</span>
                                             </button>
                                         </template>
+                                        @endif
                                         <a :href="'https://torgi.gov.ru/new/file-store/v1/' + doc.fileId"
                                            @click.stop
                                            class="text-gray-400 hover:text-gray-600 shrink-0"
@@ -474,7 +476,7 @@
                     </div>
 
                     <!-- Comment Section -->
-                    <div class="px-4 pb-3 pt-3 border-t border-gray-100">
+                    <div class="px-4 pb-5 pt-5 border-t border-gray-100">
                         <div x-show="!editingComment">
                             <div x-show="selectedLot.comment" class="flex items-start gap-2">
                                 <span class="material-icons-outlined text-sm text-gray-400 mt-0.5">comment</span>
@@ -540,6 +542,7 @@
         </div>
     </div>
 
+    @if($gpzuEnabled)
     <!-- ГПЗУ Modal -->
     <div x-show="gpzuModalOpen" x-cloak class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-4" @click.self="closeGpzuModal()">
         <div class="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
@@ -619,46 +622,13 @@
                             </div>
                         </template>
 
-                        <!-- Utility Tables -->
-                        <template x-if="gpzuData.utility_tables && gpzuData.utility_tables.length > 0">
+                        <!-- Appendix PDF (приложения + газоснабжение) -->
+                        <template x-if="gpzuData.appendix_pdf">
                             <div>
-                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Инженерные сети</h4>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Тип сети</th>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Возможность подключения</th>
-                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Макс. нагрузка</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y divide-gray-100">
-                                            <template x-for="(table, idx) in gpzuData.utility_tables" :key="idx">
-                                                <tr>
-                                                    <td class="px-3 py-2 text-gray-700 font-medium" x-text="table.network_type"></td>
-                                                    <td class="px-3 py-2">
-                                                        <span :class="table.connection_available && table.connection_available.includes('Отсутствует') ? 'text-red-600' : 'text-green-600'"
-                                                              x-text="table.connection_available || '—'"></span>
-                                                    </td>
-                                                    <td class="px-3 py-2">
-                                                        <span :class="table.max_load && table.max_load.includes('Отсутствует') ? 'text-red-600' : 'text-gray-700'"
-                                                              x-text="table.max_load || '—'"></span>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </template>
-
-                        <!-- Gas Page -->
-                        <template x-if="gpzuData.gas_page">
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Газоснабжение</h4>
+                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Приложения (инженерные сети + газоснабжение)</h4>
                                 <div class="border border-gray-200 rounded-lg overflow-hidden">
-                                    <iframe :src="'/api/lots/' + selectedLot.id + '/gpzu/page/' + gpzuData.gas_page"
-                                            class="w-full h-[600px] border-0" loading="lazy"></iframe>
+                                    <iframe :src="'/api/lots/' + selectedLot.id + '/gpzu/appendix'"
+                                            class="w-full h-[700px] border-0" loading="lazy"></iframe>
                                 </div>
                             </div>
                         </template>
@@ -678,6 +648,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 @endsection
 

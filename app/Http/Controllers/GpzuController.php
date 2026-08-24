@@ -6,7 +6,6 @@ use App\GpzuProcessingStatus;
 use App\GpzuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GpzuController extends Controller
@@ -30,7 +29,7 @@ class GpzuController extends Controller
     }
 
     /**
-     * Start ГПЗУ processing in background. Returns immediately.
+     * Start ГПЗУ processing in background.
      */
     public function process(Request $request): JsonResponse
     {
@@ -48,7 +47,6 @@ class GpzuController extends Controller
         $fileId = $request->input('file_id');
         $fileName = $request->input('file_name');
 
-        // Check if already processed
         $existing = $this->gpzuService->getDataForLot($lotId);
         if ($existing) {
             return response()->json([
@@ -59,7 +57,6 @@ class GpzuController extends Controller
 
         $status = new GpzuProcessingStatus($lotId);
 
-        // Check if already processing
         if ($status->isProcessing()) {
             $currentStatus = $status->getStatus();
 
@@ -69,7 +66,6 @@ class GpzuController extends Controller
             ]);
         }
 
-        // Launch background processing via Artisan command
         $this->launchBackgroundProcess($lotId, $fileId, $fileName);
 
         return response()->json([
@@ -93,7 +89,6 @@ class GpzuController extends Controller
         $status = new GpzuProcessingStatus($id);
         $currentStatus = $status->getStatus();
 
-        // Check if processing is done
         if ($currentStatus && $currentStatus['step'] === 'done') {
             $data = $this->gpzuService->getDataForLot($id);
 
@@ -103,7 +98,6 @@ class GpzuController extends Controller
             ]);
         }
 
-        // Check if processing is running
         if ($status->isProcessing()) {
             return response()->json([
                 'status' => 'processing',
@@ -111,7 +105,6 @@ class GpzuController extends Controller
             ]);
         }
 
-        // Check if there was an error
         if ($currentStatus && $currentStatus['step'] === 'error') {
             return response()->json([
                 'status' => 'error',
@@ -119,7 +112,6 @@ class GpzuController extends Controller
             ]);
         }
 
-        // Check if data exists (was processed before)
         $data = $this->gpzuService->getDataForLot($id);
         if ($data) {
             return response()->json([
@@ -152,13 +144,26 @@ class GpzuController extends Controller
             abort(404, 'PDF файл не найден');
         }
 
-        $extractedPage = $this->gpzuService->extractPdfPage($pdfPath, $page);
-        if (! $extractedPage || ! file_exists($extractedPage)) {
-            abort(404, 'Страница не найдена');
+        $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
+        $outputPath = $storagePath.'/page_'.md5($pdfPath).'_'.$page.'.pdf';
+
+        if (! file_exists($outputPath)) {
+            $command = sprintf(
+                'gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dFirstPage=%d -dLastPage=%d -sOutputFile=%s %s 2>&1',
+                $page,
+                $page,
+                escapeshellarg($outputPath),
+                escapeshellarg($pdfPath),
+            );
+            exec($command, $output, $returnCode);
+
+            if ($returnCode !== 0 || ! file_exists($outputPath)) {
+                abort(404, 'Страница не найдена');
+            }
         }
 
-        return response()->stream(function () use ($extractedPage) {
-            readfile($extractedPage);
+        return response()->stream(function () use ($outputPath) {
+            readfile($outputPath);
         }, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline',
@@ -167,8 +172,35 @@ class GpzuController extends Controller
     }
 
     /**
-     * Launch ГПЗУ processing in background.
+     * Serve the combined appendix PDF (приложения + газоснабжение).
      */
+    public function appendixPdf(string $id): StreamedResponse
+    {
+        if (! config('gpzu.enabled', true)) {
+            abort(404);
+        }
+
+        $data = $this->gpzuService->getDataForLot($id);
+        if (! $data || ! $data->appendix_pdf) {
+            abort(404, 'Приложения не найдены');
+        }
+
+        $storagePath = config('gpzu.temp_dir', storage_path('app/gpzu'));
+        $fullPath = $storagePath.'/'.$data->appendix_pdf;
+
+        if (! file_exists($fullPath)) {
+            abort(404, 'Файл приложений не найден');
+        }
+
+        return response()->stream(function () use ($fullPath) {
+            readfile($fullPath);
+        }, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
+
     private function launchBackgroundProcess(string $lotId, string $fileId, string $fileName): void
     {
         $command = sprintf(
