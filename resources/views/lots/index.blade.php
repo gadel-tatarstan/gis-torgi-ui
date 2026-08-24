@@ -393,6 +393,13 @@
                                                 class="text-sm flex-1 truncate text-left text-blue-600 hover:underline transition"
                                                 x-text="doc.fileName"></button>
                                         <span class="text-[11px] text-gray-400 shrink-0" x-text="doc.attachmentTypeName"></span>
+                                        <template x-if="doc.fileName && doc.fileName.toLowerCase().includes('гпзу')">
+                                            <button @click.stop="openGpzuModal(doc)"
+                                                    class="text-blue-500 hover:text-blue-700 shrink-0"
+                                                    title="Информация ГПЗУ">
+                                                <span class="material-icons-outlined text-sm">info</span>
+                                            </button>
+                                        </template>
                                         <a :href="'https://torgi.gov.ru/new/file-store/v1/' + doc.fileId"
                                            @click.stop
                                            class="text-gray-400 hover:text-gray-600 shrink-0"
@@ -516,7 +523,6 @@
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Image Preview Modal -->
     <div x-show="previewImageUrl" x-cloak class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-4" @click.self="closeImagePreview()">
@@ -530,6 +536,145 @@
             <div class="flex-1 bg-gray-100 flex items-center justify-center overflow-auto p-4">
                 <img :src="previewImageUrl" :alt="previewImageName"
                      class="max-w-full max-h-full object-contain" loading="lazy">
+            </div>
+        </div>
+    </div>
+
+    <!-- ГПЗУ Modal -->
+    <div x-show="gpzuModalOpen" x-cloak class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-4" @click.self="closeGpzuModal()">
+        <div class="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+            <div class="flex items-center justify-between px-6 py-3 border-b shrink-0">
+                <h3 class="font-semibold text-gray-800 text-sm">ГПЗУ — информация</h3>
+                <button @click="closeGpzuModal()" class="p-1.5 hover:bg-gray-100 rounded-lg shrink-0">
+                    <span class="material-icons-outlined text-lg">close</span>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- Processing with progress -->
+                <template x-if="gpzuProcessing">
+                    <div class="flex flex-col items-center justify-center py-12">
+                        <svg class="animate-spin h-10 w-10 text-blue-600 mb-4" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        <template x-if="gpzuProgress">
+                            <div class="text-center">
+                                <p class="text-sm font-medium text-gray-700" x-text="gpzuProgress.message || 'Обработка...'"/>
+                                <template x-if="gpzuProgress.total > 0">
+                                    <div class="mt-3 w-64">
+                                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                            <span>Страница <span x-text="gpzuProgress.current"></span> из <span x-text="gpzuProgress.total"></span></span>
+                                            <span x-text="Math.round((gpzuProgress.current / gpzuProgress.total) * 100) + '%'"/>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                                 :style="'width: ' + Math.round((gpzuProgress.current / gpzuProgress.total) * 100) + '%'"/>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="!gpzuProgress">
+                            <p class="text-sm text-gray-500">Запуск обработки...</p>
+                        </template>
+                        <p class="text-xs text-gray-400 mt-3">Это может занять несколько минут. Можете закрыть окно — обработка продолжится.</p>
+                    </div>
+                </template>
+
+                <!-- Error -->
+                <template x-if="gpzuError">
+                    <div class="text-center py-12">
+                        <span class="material-icons-outlined text-4xl text-red-400">error_outline</span>
+                        <p class="mt-3 text-sm font-medium text-red-600" x-text="gpzuError"></p>
+                        <button @click="closeGpzuModal()" class="mt-4 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition">
+                            Закрыть
+                        </button>
+                    </div>
+                </template>
+
+                <!-- No data (and not processing) -->
+                <template x-if="!gpzuProcessing && !gpzuError && !gpzuData">
+                    <div class="text-center py-12 text-gray-400">
+                        <span class="material-icons-outlined text-4xl">search_off</span>
+                        <p class="mt-2 text-sm">Данные ГПЗУ не найдены</p>
+                    </div>
+                </template>
+
+                <!-- Results -->
+                <template x-if="!gpzuLoading && gpzuData">
+                    <div class="space-y-6">
+                        <!-- Permitted Uses -->
+                        <template x-if="gpzuData.permitted_uses && gpzuData.permitted_uses.length > 0">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Основные виды разрешенного использования</h4>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <template x-for="(item, idx) in gpzuData.permitted_uses" :key="idx">
+                                        <div class="flex items-baseline gap-2 py-0.5 text-sm">
+                                            <span class="text-gray-400 text-xs shrink-0" x-text="idx + 1 + '.'"></span>
+                                            <span class="text-gray-700" x-text="item.name"></span>
+                                            <span class="text-gray-400 text-xs" x-text="item.code"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Utility Tables -->
+                        <template x-if="gpzuData.utility_tables && gpzuData.utility_tables.length > 0">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Инженерные сети</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Тип сети</th>
+                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Возможность подключения</th>
+                                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Макс. нагрузка</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            <template x-for="(table, idx) in gpzuData.utility_tables" :key="idx">
+                                                <tr>
+                                                    <td class="px-3 py-2 text-gray-700 font-medium" x-text="table.network_type"></td>
+                                                    <td class="px-3 py-2">
+                                                        <span :class="table.connection_available && table.connection_available.includes('Отсутствует') ? 'text-red-600' : 'text-green-600'"
+                                                              x-text="table.connection_available || '—'"></span>
+                                                    </td>
+                                                    <td class="px-3 py-2">
+                                                        <span :class="table.max_load && table.max_load.includes('Отсутствует') ? 'text-red-600' : 'text-gray-700'"
+                                                              x-text="table.max_load || '—'"></span>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Gas Page -->
+                        <template x-if="gpzuData.gas_page">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Газоснабжение</h4>
+                                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                    <iframe :src="'/api/lots/' + selectedLot.id + '/gpzu/page/' + gpzuData.gas_page"
+                                            class="w-full h-[600px] border-0" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Drawing Page -->
+                        <template x-if="gpzuData.drawing_page">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-700 mb-2">Чертеж градостроительного плана</h4>
+                                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                    <iframe :src="'/api/lots/' + selectedLot.id + '/gpzu/page/' + gpzuData.drawing_page"
+                                            class="w-full h-[600px] border-0" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
@@ -560,6 +705,14 @@ function lotApp() {
         editingComment: false,
         commentText: '',
         openDropdownId: null,
+        gpzuData: null,
+        gpzuLoading: false,
+        gpzuModalOpen: false,
+        gpzuProcessing: false,
+        gpzuProgress: null,
+        gpzuError: null,
+        gpzuPolling: null,
+        gpzuLotId: null,
         countdownIntervals: {},
         terrainMap: null,
         yandexMap: null,
@@ -677,6 +830,7 @@ function lotApp() {
             document.body.style.overflow = '';
             this.selectedLot = null;
             this.lotPolygon = null;
+            this.closeGpzuModal();
             if (this.terrainMap) {
                 try { this.terrainMap.remove(); } catch (e) {}
                 this.terrainMap = null;
@@ -1063,6 +1217,110 @@ function lotApp() {
 
         getDownloadUrl(doc) {
             return `/api/download-file?file_id=${doc.fileId}&file_name=${encodeURIComponent(doc.fileName)}`;
+        },
+
+        async openGpzuModal(doc) {
+            // Prevent duplicate requests
+            if (this.gpzuProcessing) return;
+
+            this.gpzuModalOpen = true;
+            this.gpzuLoading = true;
+            this.gpzuData = null;
+            this.gpzuError = null;
+            this.gpzuProgress = null;
+            this.gpzuLotId = this.selectedLot.id;
+
+            try {
+                // First try to get existing data
+                let res = await fetch(`/api/lots/${this.selectedLot.id}/gpzu`);
+                let data = await res.json();
+
+                if (data.gpzu) {
+                    this.gpzuData = data.gpzu;
+                    this.gpzuLoading = false;
+                    return;
+                }
+
+                // Start processing in background
+                this.gpzuProcessing = true;
+                res = await fetch('/api/gpzu/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({
+                        lot_id: this.selectedLot.id,
+                        file_id: doc.fileId,
+                        file_name: doc.fileName,
+                    }),
+                });
+                data = await res.json();
+
+                if (data.status === 'done' && data.gpzu) {
+                    this.gpzuData = data.gpzu;
+                    this.gpzuProcessing = false;
+                    this.gpzuLoading = false;
+                    return;
+                }
+
+                if (data.status === 'error') {
+                    this.gpzuError = data.error;
+                    this.gpzuProcessing = false;
+                    this.gpzuLoading = false;
+                    return;
+                }
+
+                // Start polling for status
+                this.gpzuProgress = data.progress;
+                this.startGpzuPolling();
+
+            } catch (e) {
+                console.error('Failed to process ГПЗУ', e);
+                this.gpzuError = 'Ошибка подключения к серверу';
+                this.gpzuProcessing = false;
+                this.gpzuLoading = false;
+            }
+        },
+
+        startGpzuPolling() {
+            if (this.gpzuPolling) clearInterval(this.gpzuPolling);
+            this.gpzuPolling = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/lots/${this.gpzuLotId}/gpzu/status`);
+                    const data = await res.json();
+
+                    if (data.status === 'done') {
+                        this.gpzuData = data.gpzu;
+                        this.stopGpzuPolling();
+                    } else if (data.status === 'error') {
+                        this.gpzuError = data.error;
+                        this.stopGpzuPolling();
+                    } else if (data.status === 'processing') {
+                        this.gpzuProgress = data.progress;
+                    }
+                } catch (e) {
+                    console.error('ГПЗУ polling error:', e);
+                }
+            }, 2000);
+        },
+
+        stopGpzuPolling() {
+            if (this.gpzuPolling) {
+                clearInterval(this.gpzuPolling);
+                this.gpzuPolling = null;
+            }
+            this.gpzuProcessing = false;
+            this.gpzuLoading = false;
+        },
+
+        closeGpzuModal() {
+            this.stopGpzuPolling();
+            this.gpzuModalOpen = false;
+            this.gpzuData = null;
+            this.gpzuError = null;
+            this.gpzuProgress = null;
+            this.gpzuLotId = null;
         },
 
         toggleDropdown(lotId) {
