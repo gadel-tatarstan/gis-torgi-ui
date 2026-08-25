@@ -260,23 +260,29 @@
         <div class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4"
              @click.self="closeLotModal()">
             <div class="bg-white rounded-2xl w-full max-w-7xl max-h-[95vh] shadow-2xl flex flex-col"
-                 @click.stop>
+                 @click.stop="if(!$event.target.closest('.relative')) openDropdown = null">
                 <!-- Compact Header -->
                 <div class="flex-shrink-0 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-                    <h2 class="text-sm font-semibold text-gray-800 truncate" x-text="selectedLot.cadastral_number || selectedLot.lot_name"></h2>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <h2 class="text-sm font-semibold text-gray-800 truncate" x-text="selectedLot.cadastral_number || selectedLot.lot_name"></h2>
+                        <a :href="'https://torgi.gov.ru/new/public/lots/lot/' + selectedLot.id" target="_blank" rel="noopener"
+                           class="text-gray-400 hover:text-blue-500 transition shrink-0" title="Открыть на Торги">
+                            <span class="material-icons-outlined text-sm">open_in_new</span>
+                        </a>
+                    </div>
                     <div class="flex items-center gap-1 shrink-0">
-                        <div x-data="{ open: false }" class="relative">
-                            <button @click="open = !open" class="p-1.5 hover:bg-gray-100 rounded-lg">
+                        <div class="relative">
+                            <button @click.stop="openDropdown = openDropdown === 'header' ? null : 'header'" class="p-1.5 hover:bg-gray-100 rounded-lg">
                                 <span class="material-icons-outlined text-gray-500 text-lg">more_vert</span>
                             </button>
-                            <div x-show="open" @click.away="open = false" x-cloak
+                            <div x-show="openDropdown === 'header'" x-cloak
                                  class="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-                                <button @click="markNotInterested(selectedLot); closeLotModal(); open = false"
+                                <button @click="markNotInterested(selectedLot); closeLotModal(); openDropdown = null"
                                         class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
                                     <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
                                 </button>
                                 <template x-if="!selectedLot.on_board">
-                                    <button @click="addToYougile(selectedLot); open = false"
+                                    <button @click="addToYougile(selectedLot); openDropdown = null"
                                             class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
                                         <span class="material-icons-outlined text-sm">dashboard</span> На доску
                                     </button>
@@ -325,32 +331,27 @@
                         <div class="md:w-1/2 p-4 space-y-2">
                             <!-- Price (large) -->
                             <div class="text-xl font-bold text-green-700" x-text="formatPrice(selectedLot.price_min)"></div>
-
-                            <!-- НДС under price -->
-                            <div class="text-sm text-gray-600">
-                                <span class="text-gray-500">НДС:</span>
-                                <span x-text="selectedLot.lot_vat_name || '—'"></span>
-                            </div>
+                            <div class="text-sm text-gray-600 !mt-0" x-text="selectedLot.lot_vat_name || ''"></div>
 
                             <div class="border-t border-gray-100 pt-2 space-y-1.5">
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Адрес:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Адрес:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.estate_address || '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Площадь:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Площадь:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.area ? selectedLot.area + ' м²' : '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Использование:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Использование:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.permitted_use || '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Тип торгов:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Тип торгов:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.bidd_form_name || '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">ЭТП:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">ЭТП:</span>
                                     <template x-if="selectedLot.etp_url">
                                         <a :href="selectedLot.etp_url" target="_blank" class="text-sm text-blue-600 hover:underline" x-text="etpNames[selectedLot.etp_code] || selectedLot.etp_code"></a>
                                     </template>
@@ -359,29 +360,36 @@
                                     </template>
                                 </div>
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Шаг торгов:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Шаг торгов:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.price_step ? formatPrice(selectedLot.price_step) + ' руб.' : '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Задаток:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Задаток:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.deposit ? formatPrice(selectedLot.deposit) + ' руб.' : '—'"></span>
                                 </div>
-                            </div>
-
-                            <div class="border-t border-gray-100 pt-2 space-y-1.5">
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Подача заявок до:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Подача заявок до:</span>
                                     <span class="text-sm text-gray-700" :class="{ 'countdown-expired': isExpired(selectedLot.bidd_end_time) }" x-text="selectedLot.bidd_end_time ? formatDate(selectedLot.bidd_end_time) : '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[120px]">Старт аукциона:</span>
+                                    <span class="text-sm text-gray-500 min-w-[130px]">Старт аукциона:</span>
                                     <span class="text-sm text-gray-700" x-text="selectedLot.auction_start_date ? formatDate(selectedLot.auction_start_date) : '—'"></span>
                                 </div>
-                                <div x-show="selectedLot.estate_address" class="flex items-start gap-2">
-                                    <a :href="'https://www.avito.ru/all/zemelnye_uchastki?q=' + encodeURIComponent(selectedLot.estate_address)"
+                                <div x-show="selectedLot.estate_address || (lotPolygon && lotPolygon.center_lat && lotPolygon.center_lon)" class="flex items-center gap-3">
+                                    <a x-show="selectedLot.estate_address" :href="'https://www.avito.ru/all/zemelnye_uchastki?q=' + encodeURIComponent(selectedLot.estate_address)"
                                        target="_blank" rel="noopener"
                                        class="text-gray-400 hover:text-gray-600 transition">
                                         <img src="{{ asset('Avito_logo.svg') }}" class="w-14 h-14" alt="Avito">
+                                    </a>
+                                    <a x-show="lotPolygon && lotPolygon.center_lat && lotPolygon.center_lon" :href="'https://www.cian.ru/map/?center=' + lotPolygon.center_lat + '%2C' + lotPolygon.center_lon + '&deal_type=sale&engine_version=2&object_type[0]=3&offer_type=suburban&zoom=15'"
+                                       target="_blank" rel="noopener"
+                                       class="text-gray-400 hover:text-gray-600 transition">
+                                        <img src="{{ asset('cian.svg') }}" class="w-14 h-10 -mt-[5px]" alt="ЦИАН">
+                                    </a>
+                                    <a x-show="lotPolygon && lotPolygon.center_lat && lotPolygon.center_lon" :href="(() => { const lat = lotPolygon.center_lat, lon = lotPolygon.center_lon; const dlat = 0.005, dlon = 0.015; return 'https://domclick.ru/search/on-map?deal_type=sale&category=living&offer_type=lot&sw=' + (lat - dlat) + '%2C' + (lon - dlon) + '&ne=' + (lat + dlat) + '%2C' + (lon + dlon); })()"
+                                       target="_blank" rel="noopener"
+                                       class="text-gray-400 hover:text-gray-600 transition">
+                                        <img src="{{ asset('domclick-logo.svg') }}" class="h-5 w-auto" alt="ДомКлик">
                                     </a>
                                 </div>
                             </div>
@@ -615,6 +623,7 @@ function lotApp() {
         error: null,
         sidebarOpen: false,
         selectedLot: null,
+        openDropdown: null,
         activeTab: 'google',
         lotPolygon: null,
         previewDoc: null,
@@ -751,6 +760,7 @@ function lotApp() {
             document.body.style.overflow = '';
             this.selectedLot = null;
             this.lotPolygon = null;
+            this.openDropdown = null;
             this.closeGpzuModal();
             if (this.terrainMap) {
                 try { this.terrainMap.remove(); } catch (e) {}
