@@ -209,7 +209,9 @@
                                                 <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
                                             </button>
                                             <button @click="addToYougile(lot); openDropdownId = null"
-                                                    class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                                    :disabled="lot.on_board"
+                                                    :class="lot.on_board ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-50'"
+                                                    class="w-full text-left px-3 py-2 text-sm flex items-center gap-2">
                                                 <span class="material-icons-outlined text-sm">dashboard</span> На доску
                                             </button>
                                         </div>
@@ -275,7 +277,9 @@
                                     <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
                                 </button>
                                 <button @click="addToYougile(selectedLot); openDropdown = null"
-                                        class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                        :disabled="selectedLot.on_board"
+                                        :class="selectedLot.on_board ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-50'"
+                                        class="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2">
                                     <span class="material-icons-outlined text-sm">dashboard</span> На доску
                                 </button>
                             </div>
