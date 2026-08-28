@@ -41,19 +41,41 @@ class NspdService
                 return null;
             }
 
-            // Calculate center in EPSG:3857 before converting (needed for NSPD iframe URL)
-            $mercatorCenter = $this->calculatePolygonCenter($rawCoordinates);
+            // Handle both simple polygon [[x,y],...] and multi-polygon [[[x,y],...],...]
+            $flatCoordinates = $this->flattenCoordinates($rawCoordinates);
 
-            // Convert EPSG:3857 (Web Mercator) → WGS84 (lat/lng)
-            $coordinates = $this->convertFromEpsg3857ToWgs84($rawCoordinates);
-            $center = $this->calculatePolygonCenter($coordinates);
+            if (empty($flatCoordinates)) {
+                return null;
+            }
+
+            try {
+                $mercatorCenter = $this->calculatePolygonCenter($flatCoordinates);
+                $coordinates = $this->convertFromEpsg3857ToWgs84($flatCoordinates);
+                $center = $this->calculatePolygonCenter($coordinates);
+                $mercatorX = $mercatorCenter['lon'];
+                $mercatorY = $mercatorCenter['lat'];
+                $centerLat = $center['lat'];
+                $centerLon = $center['lon'];
+            } catch (\Throwable $e) {
+                Log::warning('Failed to calculate polygon center, using first vertex', [
+                    'cadastral_number' => $cadastralNumber,
+                    'message' => $e->getMessage(),
+                ]);
+                $first = $flatCoordinates[0];
+                $convertedFirst = $this->convertFromEpsg3857ToWgs84([$first])[0];
+                $coordinates = [];
+                $centerLat = $convertedFirst[1];
+                $centerLon = $convertedFirst[0];
+                $mercatorX = $first[0];
+                $mercatorY = $first[1];
+            }
 
             return [
                 'coordinates' => $coordinates,
-                'center_lat' => $center['lat'],
-                'center_lon' => $center['lon'],
-                'mercator_x' => $mercatorCenter['lon'],
-                'mercator_y' => $mercatorCenter['lat'],
+                'center_lat' => $centerLat,
+                'center_lon' => $centerLon,
+                'mercator_x' => $mercatorX,
+                'mercator_y' => $mercatorY,
                 'address' => $options['readable_address'] ?? null,
                 'area' => $options['specified_area'] ?? null,
                 'cad_cost' => $options['cost_value'] ?? null,
@@ -95,6 +117,32 @@ class NspdService
         }
 
         return $result;
+    }
+
+    /**
+     * Flatten coordinate arrays. Handles:
+     * - Simple polygon: [[x,y], [x,y], ...]
+     * - Multi-polygon: [[[x,y],...], [[x,y],...]]
+     */
+    private function flattenCoordinates(array $coordinates): array
+    {
+        if (empty($coordinates)) {
+            return [];
+        }
+
+        // Check if first element is an array of arrays (multi-polygon)
+        if (is_array($coordinates[0]) && isset($coordinates[0][0]) && is_array($coordinates[0][0])) {
+            $flat = [];
+            foreach ($coordinates as $part) {
+                foreach ($part as $coord) {
+                    $flat[] = $coord;
+                }
+            }
+
+            return $flat;
+        }
+
+        return $coordinates;
     }
 
     private function calculatePolygonCenter(array $coordinates): array
