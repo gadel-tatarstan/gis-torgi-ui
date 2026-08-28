@@ -159,7 +159,7 @@
                                 <div class="flex-1 min-w-0 px-3 py-2 text-xs text-gray-500 cursor-pointer hidden sm:flex flex-col justify-center items-start overflow-hidden">
                                     <span class="inline-flex items-center gap-0.5">
                                         <span class="material-icons-outlined text-xs">straighten</span>
-                                        <span x-text="lot.area ? lot.area + ' м²' : '—'"></span>
+                                        <span x-text="formatArea(lot.area)"></span>
                                     </span>
                                     <span class="inline-flex items-center gap-0.5">
                                         <span class="material-icons-outlined text-xs">category</span>
@@ -331,7 +331,7 @@
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Площадь:</span>
-                                    <span class="text-sm text-gray-700" x-text="selectedLot.area ? selectedLot.area + ' м²' : '—'"></span>
+                                    <span class="text-sm text-gray-700" x-text="formatArea(selectedLot.area)"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Использование:</span>
@@ -352,11 +352,11 @@
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Шаг торгов:</span>
-                                    <span class="text-sm text-gray-700" x-text="selectedLot.price_step ? formatPrice(selectedLot.price_step) + ' руб.' : '—'"></span>
+                                    <span class="text-sm text-gray-700" x-text="selectedLot.price_step ? formatPrice(selectedLot.price_step) : '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Задаток:</span>
-                                    <span class="text-sm text-gray-700" x-text="selectedLot.deposit ? formatPrice(selectedLot.deposit) + ' руб.' : '—'"></span>
+                                    <span class="text-sm text-gray-700" x-text="selectedLot.deposit ? formatPrice(selectedLot.deposit) : '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Подача заявок до:</span>
@@ -1325,6 +1325,11 @@ function lotApp() {
         formatPrice(price) {
             if (!price && price !== 0) return '—';
             return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
+        },
+
+        formatArea(area) {
+            if (!area && area !== 0) return '—';
+            return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(area) + ' м²';
         },
 
         formatDate(dateStr) {

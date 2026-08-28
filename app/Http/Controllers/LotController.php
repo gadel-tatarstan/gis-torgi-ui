@@ -203,7 +203,7 @@ class LotController extends Controller
 
         $payload = [
             'title' => $title,
-            'description' => $lot->lot_name."\n\nАдрес: ".($lot->estate_address ?? 'не указан')."\nЦена: ".number_format($lot->price_min, 2, ',', ' ')." руб.\nПлощадь: ".($lot->area ?? '—').' м²',
+            'description' => $lot->lot_name."\n\nАдрес: ".($lot->estate_address ?? 'не указан'),
             'columnId' => $setting->yg_column_id,
             'idTaskCommon' => $idPrefix,
             'idTaskProject' => $idPrefix,
@@ -226,21 +226,21 @@ class LotController extends Controller
         }
 
         // Начальная цена
-        $stickers['7c0874ef-adea-4df6-8088-cebf6070e032'] = (string) (int) $lot->price_min;
+        $stickers['7c0874ef-adea-4df6-8088-cebf6070e032'] = self::formatPrice($lot->price_min).' ₽';
 
         // Шаг торгов
         if ($lot->price_step) {
-            $stickers['d1023454-cde7-42d1-a095-ab350ff390f1'] = (string) (int) $lot->price_step;
+            $stickers['d1023454-cde7-42d1-a095-ab350ff390f1'] = self::formatPrice($lot->price_step).' ₽';
         }
 
         // Задаток
         if ($lot->deposit) {
-            $stickers['a0bbcf48-a930-498a-895c-4cdf868e6eb0'] = (string) (int) $lot->deposit;
+            $stickers['a0bbcf48-a930-498a-895c-4cdf868e6eb0'] = self::formatPrice($lot->deposit).' ₽';
         }
 
         // Площадь
         if ($lot->area) {
-            $stickers['f8003c33-0e55-49a5-80ba-140e811b305d'] = (string) (int) $lot->area;
+            $stickers['f8003c33-0e55-49a5-80ba-140e811b305d'] = number_format($lot->area, 0, '', ' ').' м²';
         }
 
         // ВРИ (жёсткое значение)
@@ -248,7 +248,7 @@ class LotController extends Controller
 
         // Рыночная цена — только если заполнена
         if ($lot->market_price) {
-            $stickers['80cf0261-750a-4256-9060-fefa746da57e'] = (string) (int) $lot->market_price;
+            $stickers['80cf0261-750a-4256-9060-fefa746da57e'] = self::formatPrice($lot->market_price).' ₽';
         }
 
         // Коммуникации (жёсткое значение)
@@ -381,5 +381,14 @@ class LotController extends Controller
         $lot->update(['comment' => $request->input('comment')]);
 
         return response()->json(['success' => true, 'comment' => $lot->comment]);
+    }
+
+    private static function formatPrice(float $value): string
+    {
+        if ($value == (int) $value) {
+            return number_format($value, 0, '', ' ');
+        }
+
+        return number_format($value, 2, '.', ' ');
     }
 }
