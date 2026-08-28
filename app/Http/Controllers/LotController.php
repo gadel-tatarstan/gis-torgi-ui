@@ -10,6 +10,8 @@ use App\NspdService;
 use App\TorgiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -162,14 +164,15 @@ class LotController extends Controller
             'yg_company_id' => 'nullable|string',
             'yg_api_token' => 'nullable|string',
             'yg_board_id' => 'nullable|string',
+            'yg_column_id' => 'nullable|string',
         ]);
 
         $setting = UserSetting::firstOrCreate(
             ['user_id' => auth()->id() ?? 1],
-            $request->only(['yg_company_id', 'yg_api_token', 'yg_board_id'])
+            $request->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id'])
         );
 
-        $setting->update($request->only(['yg_company_id', 'yg_api_token', 'yg_board_id']));
+        $setting->update($request->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id']));
 
         return response()->json(['success' => true]);
     }
@@ -180,8 +183,8 @@ class LotController extends Controller
 
         $setting = UserSetting::where('user_id', auth()->id() ?? 1)->first();
 
-        if (! $setting || ! $setting->yg_api_token || ! $setting->yg_board_id) {
-            return response()->json(['error' => 'Настройки YouGile не заполнены'], 400);
+        if (! $setting || ! $setting->yg_api_token || ! $setting->yg_column_id) {
+            return response()->json(['error' => 'Настройки YouGile не заполнены (токен и Column ID обязательны)'], 400);
         }
 
         $lot = Lot::find($request->input('id'));
@@ -189,22 +192,115 @@ class LotController extends Controller
             return response()->json(['error' => 'Лот не найден'], 404);
         }
 
+        $torgiUrl = 'https://torgi.gov.ru/new/public/lots/lot/'.urlencode($lot->id);
+        $title = ($lot->cadastral_number ?? 'Без номера').' | '.$torgiUrl;
+        $idPrefix = 'GADEL_'.$lot->id;
+
+        $deadlineTimestamp = null;
+        if ($lot->bidd_end_time) {
+            $deadlineTimestamp = $lot->bidd_end_time->timestamp * 1000;
+        }
+
+        $payload = [
+            'title' => $title,
+            'description' => $lot->lot_name."\n\nАдрес: ".($lot->estate_address ?? 'не указан')."\nЦена: ".number_format($lot->price_min, 2, ',', ' ')." руб.\nПлощадь: ".($lot->area ?? '—').' м²',
+            'columnId' => $setting->yg_column_id,
+            'idTaskCommon' => $idPrefix,
+            'idTaskProject' => $idPrefix,
+            'idempotencyKey' => $idPrefix,
+        ];
+
+        if ($deadlineTimestamp) {
+            $payload['deadline'] = [
+                'deadline' => $deadlineTimestamp,
+                'withTime' => true,
+            ];
+        }
+
+        $stickers = [];
+
+        // Площадка
+        $etp = Etp::where('code', $lot->etp_code)->first();
+        if ($etp && $etp->yg_sticker_id) {
+            $stickers['0bf1e77e-694e-4135-a0df-0183155d4dbb'] = $etp->yg_sticker_id;
+        }
+
+        // Начальная цена
+        $stickers['7c0874ef-adea-4df6-8088-cebf6070e032'] = (string) (int) $lot->price_min;
+
+        // Шаг торгов
+        if ($lot->price_step) {
+            $stickers['d1023454-cde7-42d1-a095-ab350ff390f1'] = (string) (int) $lot->price_step;
+        }
+
+        // Задаток
+        if ($lot->deposit) {
+            $stickers['a0bbcf48-a930-498a-895c-4cdf868e6eb0'] = (string) (int) $lot->deposit;
+        }
+
+        // Площадь
+        if ($lot->area) {
+            $stickers['f8003c33-0e55-49a5-80ba-140e811b305d'] = (string) (int) $lot->area;
+        }
+
+        // ВРИ (жёсткое значение)
+        $stickers['7a610416-adb7-45b1-bc6e-93245eadc664'] = '02d939539770';
+
+        // Рыночная цена — только если заполнена
+        if ($lot->market_price) {
+            $stickers['80cf0261-750a-4256-9060-fefa746da57e'] = (string) (int) $lot->market_price;
+        }
+
+        // Коммуникации (жёсткое значение)
+        $stickers['64839fb2-092a-42c7-b4c3-561a6cd10c3d'] = 'empty';
+
+        // Дорога (жёсткое значение)
+        $stickers['a09052a3-ed31-427f-ae3a-ad2503a76b55'] = 'empty';
+
+        $payload['stickers'] = $stickers;
+
         $ygResponse = Http::withHeaders([
             'Authorization' => 'Bearer '.$setting->yg_api_token,
             'Content-Type' => 'application/json',
-        ])->post("https://ru.yougile.com/api-v2/post/companies/{$setting->yg_company_id}/boards/{$setting->yg_board_id}/tasks", [
-            'title' => "Участок: {$lot->cadastral_number}",
-            'description' => $lot->lot_name."\n\nАдрес: ".($lot->estate_address ?? 'не указан')."\nЦена: ".number_format($lot->price_min, 2, ',', ' ')." руб.\nПлощадь: ".($lot->area ?? '—').' м²',
-            'columnId' => $setting->yg_board_id,
-        ]);
+        ])->post('https://ru.yougile.com/api-v2/tasks', $payload);
 
         if ($ygResponse->successful()) {
-            $lot->update(['on_board' => true]);
+            $ygData = $ygResponse->json();
+            $lot->update([
+                'on_board' => true,
+                'yg_task_id' => $ygData['id'] ?? null,
+            ]);
 
             return response()->json(['success' => true]);
         }
 
-        return response()->json(['error' => 'Ошибка создания карточки в YouGile'], 500);
+        Log::error('YouGile API error', [
+            'lot_id' => $lot->id,
+            'status' => $ygResponse->status(),
+            'response' => $ygResponse->body(),
+        ]);
+
+        return response()->json([
+            'error' => 'Ошибка создания карточки в YouGile',
+            'details' => $ygResponse->json('message', $ygResponse->body()),
+        ], 500);
+    }
+
+    public function saveMarketPrice(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'market_price' => 'nullable|numeric|min:0',
+        ]);
+
+        $lot = Lot::find($id);
+        if (! $lot) {
+            return response()->json(['error' => 'Лот не найден'], 404);
+        }
+
+        $value = $request->input('market_price');
+        $lot->update(['market_price' => $value !== null && $value !== '' ? $value : null]);
+
+        return response()->json(['success' => true]);
     }
 
     /**

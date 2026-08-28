@@ -13,6 +13,7 @@ Route::post('/api/lots/viewed', [LotController::class, 'markViewed'])->name('lot
 Route::get('/api/polygon', [LotController::class, 'fetchPolygon'])->name('lots.polygon');
 Route::post('/api/lots/add-to-yougile', [LotController::class, 'addToYougile'])->name('lots.add-to-yougile');
 Route::put('/api/lots/{id}/comment', [LotController::class, 'saveComment'])->name('lots.save-comment');
+Route::put('/api/lots/{id}/market-price', [LotController::class, 'saveMarketPrice'])->name('lots.save-market-price');
 Route::get('/api/download-file', [LotController::class, 'downloadFile'])->name('lots.download-file');
 Route::get('/api/preview-file', [LotController::class, 'previewFile'])->name('lots.preview-file');
 Route::get('/settings', [LotController::class, 'settings'])->name('lots.settings');

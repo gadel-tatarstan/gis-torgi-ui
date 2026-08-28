@@ -140,7 +140,7 @@
                                     <!-- YouGile Badge -->
                                     <template x-if="lot.on_board">
                                         <div class="yougile-badge z-10">
-                                            <img src="{{ asset('img/yougile2.avif') }}" alt="YouGile" class="w-full h-full object-cover">
+                                            <img src="{{ asset('yougile2.avif') }}" alt="YouGile" class="w-full h-full object-cover">
                                         </div>
                                     </template>
                                     <!-- Viewed Badge -->
@@ -208,17 +208,10 @@
                                                     class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
                                                 <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
                                             </button>
-                                            <template x-if="!lot.on_board">
-                                                <button @click="addToYougile(lot); openDropdownId = null"
-                                                        class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
-                                                    <span class="material-icons-outlined text-sm">dashboard</span> На доску
-                                                </button>
-                                            </template>
-                                            <template x-if="lot.on_board">
-                                                <div class="w-full text-left px-3 py-2 text-sm text-gray-400 flex items-center gap-2">
-                                                    <span class="material-icons-outlined text-sm">check_circle</span> На доске
-                                                </div>
-                                            </template>
+                                            <button @click="addToYougile(lot); openDropdownId = null"
+                                                    class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                                <span class="material-icons-outlined text-sm">dashboard</span> На доску
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -281,12 +274,10 @@
                                         class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
                                     <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
                                 </button>
-                                <template x-if="!selectedLot.on_board">
-                                    <button @click="addToYougile(selectedLot); openDropdown = null"
-                                            class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
-                                        <span class="material-icons-outlined text-sm">dashboard</span> На доску
-                                    </button>
-                                </template>
+                                <button @click="addToYougile(selectedLot); openDropdown = null"
+                                        class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                    <span class="material-icons-outlined text-sm">dashboard</span> На доску
+                                </button>
                             </div>
                         </div>
                         <button @click="closeLotModal()" class="p-1.5 hover:bg-gray-100 rounded-lg">
@@ -391,6 +382,14 @@
                                        class="text-gray-400 hover:text-gray-600 transition">
                                         <img src="{{ asset('domclick-logo.svg') }}" class="h-5 w-auto" alt="ДомКлик">
                                     </a>
+                                    <div class="flex items-center gap-1 ml-2">
+                                        <input type="number" min="0" step="1" inputmode="numeric"
+                                               :value="selectedLot.market_price || ''"
+                                               @blur="saveMarketPrice($event.target.value)"
+                                               class="w-28 text-sm text-gray-700 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                               placeholder="Рын. цена">
+                                        <span class="text-sm text-gray-500">руб.</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1127,6 +1126,26 @@ function lotApp() {
                     this.editingComment = false;
                     const lotInList = this.lots.find(l => l.id === this.selectedLot.id);
                     if (lotInList) lotInList.comment = data.comment;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        async saveMarketPrice(value) {
+            const price = value ? parseFloat(value) : null;
+            if (this.selectedLot.market_price === price) return;
+            try {
+                const res = await fetch(`/api/lots/${this.selectedLot.id}/market-price`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    body: JSON.stringify({ market_price: price })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.selectedLot.market_price = price;
+                    const lotInList = this.lots.find(l => l.id === this.selectedLot.id);
+                    if (lotInList) lotInList.market_price = price;
                 }
             } catch (e) {
                 console.error(e);

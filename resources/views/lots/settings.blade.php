@@ -51,6 +51,13 @@
                     <p class="text-xs text-gray-400 mt-1">Найдите в URL при открытии доски</p>
                 </div>
 
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Column ID (ID колонки)</label>
+                    <input type="text" x-model="form.yg_column_id" placeholder="ID колонки в YouGile"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <p class="text-xs text-gray-400 mt-1">ID колонки, в которую будут добавляться задачи</p>
+                </div>
+
                 <button @click="saveSettings()" :disabled="saving"
                         class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition mt-6">
                     <span x-show="!saving">Сохранить</span>
@@ -68,21 +75,22 @@
 @push('scripts')
 <script>
 function settingsApp() {
-    return {
-        form: {
-            yg_company_id: '',
-            yg_api_token: '',
-            yg_board_id: '',
-        },
+    return {                form: {
+                    yg_company_id: '',
+                    yg_api_token: '',
+                    yg_board_id: '',
+                    yg_column_id: '',
+                },
         saving: false,
         success: false,
         error: null,
 
         init() {
-            const setting = @js($setting->only(['yg_company_id', 'yg_api_token', 'yg_board_id']));
+            const setting = @js($setting->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id']));
             this.form.yg_company_id = setting.yg_company_id || '';
             this.form.yg_api_token = setting.yg_api_token || '';
             this.form.yg_board_id = setting.yg_board_id || '';
+            this.form.yg_column_id = setting.yg_column_id || '';
         },
 
         async saveSettings() {

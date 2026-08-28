@@ -15,6 +15,7 @@ class Etp extends Model
         'icon_url',
         'icon_file_name',
         'key_etp',
+        'yg_sticker_id',
         'order',
     ];
 
