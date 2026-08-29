@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\GpzuController;
 use App\Http\Controllers\LotController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,11 +17,3 @@ Route::get('/api/download-file', [LotController::class, 'downloadFile'])->name('
 Route::get('/api/preview-file', [LotController::class, 'previewFile'])->name('lots.preview-file');
 Route::get('/settings', [LotController::class, 'settings'])->name('lots.settings');
 Route::post('/settings', [LotController::class, 'saveSettings'])->name('lots.save-settings');
-
-// ГПЗУ routes (conditionally registered)
-if (config('gpzu.enabled', true)) {
-    Route::get('/api/lots/{id}/gpzu', [GpzuController::class, 'getData'])->name('lots.gpzu-data');
-    Route::get('/api/lots/{id}/gpzu/pages', [GpzuController::class, 'pages'])->name('lots.gpzu-pages');
-    Route::post('/api/gpzu/process', [GpzuController::class, 'process'])->name('lots.gpzu-process');
-    Route::get('/api/lots/{id}/gpzu/status', [GpzuController::class, 'status'])->name('lots.gpzu-status');
-}

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lot extends Model
 {
@@ -82,11 +81,6 @@ class Lot extends Model
     public function etp(): BelongsTo
     {
         return $this->belongsTo(Etp::class, 'etp_code', 'code');
-    }
-
-    public function gpzuData(): HasOne
-    {
-        return $this->hasOne(GpzuData::class, 'lot_id');
     }
 
     public function scopeNotOlderThanDays($query, int $days = 20): Builder

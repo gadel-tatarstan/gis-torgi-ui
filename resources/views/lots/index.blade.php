@@ -549,64 +549,6 @@
         </div>
     </div>
 
-    @if($gpzuEnabled)
-    <!-- ГПЗУ Modal -->
-    <div x-show="gpzuModalOpen" x-cloak class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-4" @click.self="closeGpzuModal()">
-        <div class="bg-white rounded-2xl w-full max-w-7xl h-[95vh] overflow-hidden shadow-2xl flex flex-col">
-            <!-- Header -->
-            <div class="flex items-center justify-between px-4 py-2 border-b shrink-0">
-                <div class="flex items-center gap-2">
-                    <h3 class="font-semibold text-gray-800 text-sm">ГПЗУ</h3>
-                    <!-- Drawing button -->
-                    <button x-show="gpzuDrawingPage"
-                            @click="gpzuNavigateTo(gpzuDrawingPage)"
-                            class="px-3 py-1 text-xs font-medium rounded-lg transition"
-                            :class="gpzuActiveNav === 'drawing' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
-                        <span class="material-icons-outlined text-xs align-text-bottom">map</span> Схема
-                    </button>
-                    <!-- Appendix button -->
-                    <button x-show="gpzuAppendixPage"
-                            @click="gpzuNavigateTo(gpzuAppendixPage)"
-                            class="px-3 py-1 text-xs font-medium rounded-lg transition"
-                            :class="gpzuActiveNav === 'appendix' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
-                        <span class="material-icons-outlined text-xs align-text-bottom">cable</span> Коммуникации
-                    </button>
-                    <!-- Loading indicator while OCR runs -->
-                    <template x-if="gpzuProcessing">
-                        <span class="flex items-center gap-1.5 text-xs text-gray-400">
-                            <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                            Поиск страниц...
-                        </span>
-                    </template>
-                </div>
-                <button @click="closeGpzuModal()" class="p-1.5 hover:bg-gray-100 rounded-lg shrink-0">
-                    <span class="material-icons-outlined text-gray-500 text-lg">close</span>
-                </button>
-            </div>
-
-            <!-- PDF Viewer -->
-            <div class="flex-1 bg-gray-200 relative">
-                <template x-if="gpzuPdfReady">
-                    <iframe :src="gpzuPdfUrl"
-                            class="w-full h-full border-0"></iframe>
-                </template>
-                <template x-if="!gpzuPdfReady && !gpzuError">
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <svg class="animate-spin h-8 w-8 text-blue-500 mb-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                        <p class="text-sm text-gray-500">Загрузка PDF...</p>
-                    </div>
-                </template>
-                <template x-if="gpzuError">
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <span class="material-icons-outlined text-4xl text-red-400">error_outline</span>
-                        <p class="mt-2 text-sm text-red-600" x-text="gpzuError"></p>
-                        <button @click="closeGpzuModal()" class="mt-3 px-4 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg transition">Закрыть</button>
-                    </div>
-                </template>
-            </div>
-        </div>
-    </div>
-    @endif
 </div>
 @endsection
 
@@ -635,17 +577,6 @@ function lotApp() {
         editingComment: false,
         commentText: '',
         openDropdownId: null,
-        gpzuModalOpen: false,
-        gpzuProcessing: false,
-        gpzuError: null,
-        gpzuPolling: null,
-        gpzuLotId: null,
-        gpzuFileId: null,
-        gpzuPdfReady: false,
-        gpzuPdfUrl: '',
-        gpzuDrawingPage: null,
-        gpzuAppendixPage: null,
-        gpzuActiveNav: null,
         countdownIntervals: {},
         terrainMap: null,
         yandexMap: null,
@@ -764,7 +695,6 @@ function lotApp() {
             this.selectedLot = null;
             this.lotPolygon = null;
             this.openDropdown = null;
-            this.closeGpzuModal();
             if (this.terrainMap) {
                 try { this.terrainMap.remove(); } catch (e) {}
                 this.terrainMap = null;
@@ -1173,127 +1103,6 @@ function lotApp() {
             return `/api/download-file?file_id=${doc.fileId}&file_name=${encodeURIComponent(doc.fileName)}`;
         },
 
-        async openGpzuModal(doc) {
-            if (this.gpzuProcessing) return;
-
-            this.gpzuModalOpen = true;
-            this.gpzuError = null;
-            this.gpzuProcessing = false;
-            this.gpzuPdfReady = false;
-            this.gpzuPdfUrl = '';
-            this.gpzuDrawingPage = null;
-            this.gpzuAppendixPage = null;
-            this.gpzuActiveNav = null;
-            this.gpzuLotId = this.selectedLot.id;
-            this.gpzuFileId = doc.fileId;
-
-            // Show PDF directly from torgi
-            this.gpzuPdfUrl = `https://torgi.gov.ru/new/file-store/v1/${doc.fileId}`;
-            this.gpzuPdfReady = true;
-
-            try {
-                // Check if we already have page numbers
-                let res = await fetch(`/api/lots/${this.selectedLot.id}/gpzu/pages`);
-                let data = await res.json();
-
-                if (data.status === 'done') {
-                    this.gpzuDrawingPage = data.drawing_page;
-                    this.gpzuAppendixPage = data.appendix_page;
-                    return;
-                }
-
-                if (data.status === 'error') {
-                    this.gpzuError = data.error;
-                    return;
-                }
-
-                // Start processing in background
-                this.gpzuProcessing = true;
-                res = await fetch('/api/gpzu/process', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                    },
-                    body: JSON.stringify({
-                        lot_id: this.selectedLot.id,
-                        file_id: doc.fileId,
-                        file_name: doc.fileName,
-                    }),
-                });
-                data = await res.json();
-
-                if (data.status === 'done') {
-                    this.gpzuDrawingPage = data.drawing_page;
-                    this.gpzuAppendixPage = data.appendix_page;
-                    this.gpzuProcessing = false;
-                    return;
-                }
-
-                if (data.status === 'error') {
-                    this.gpzuError = data.error;
-                    this.gpzuProcessing = false;
-                    return;
-                }
-
-                // Start polling for page numbers
-                this.startGpzuPolling();
-
-            } catch (e) {
-                console.error('Failed to process ГПЗУ', e);
-                this.gpzuError = 'Ошибка подключения к серверу';
-                this.gpzuProcessing = false;
-            }
-        },
-
-        startGpzuPolling() {
-            if (this.gpzuPolling) clearInterval(this.gpzuPolling);
-            this.gpzuPolling = setInterval(async () => {
-                try {
-                    const res = await fetch(`/api/lots/${this.gpzuLotId}/gpzu/pages`);
-                    const data = await res.json();
-
-                    if (data.status === 'done') {
-                        this.gpzuDrawingPage = data.drawing_page;
-                        this.gpzuAppendixPage = data.appendix_page;
-                        this.stopGpzuPolling();
-                    } else if (data.status === 'error') {
-                        this.gpzuError = data.error;
-                        this.stopGpzuPolling();
-                    }
-                } catch (e) {
-                    console.error('ГПЗУ polling error:', e);
-                }
-            }, 2000);
-        },
-
-        stopGpzuPolling() {
-            if (this.gpzuPolling) {
-                clearInterval(this.gpzuPolling);
-                this.gpzuPolling = null;
-            }
-            this.gpzuProcessing = false;
-        },
-
-        gpzuNavigateTo(page) {
-            if (!page) return;
-            this.gpzuActiveNav = page === this.gpzuDrawingPage ? 'drawing' : 'appendix';
-            this.gpzuPdfUrl = `https://torgi.gov.ru/new/file-store/v1/${this.gpzuFileId}#page=${page}`;
-        },
-
-        closeGpzuModal() {
-            this.stopGpzuPolling();
-            this.gpzuModalOpen = false;
-            this.gpzuError = null;
-            this.gpzuPdfReady = false;
-            this.gpzuPdfUrl = '';
-            this.gpzuDrawingPage = null;
-            this.gpzuAppendixPage = null;
-            this.gpzuActiveNav = null;
-            this.gpzuLotId = null;
-            this.gpzuFileId = null;
-        },
-
         toggleDropdown(lotId) {
             this.openDropdownId = this.openDropdownId === lotId ? null : lotId;
         },
@@ -1319,8 +1128,6 @@ function lotApp() {
                 window.location.href = this._getDirectTorgiUrl(doc);
             } else if (this._isImageFile(doc)) {
                 window.open('https://torgi.gov.ru/new/image-preview/v1/' + doc.fileId + '?disposition=inline', '_blank');
-            } else if (@js($gpzuEnabled) && doc.fileName && doc.fileName.toLowerCase().includes('гпзу')) {
-                this.openGpzuModal(doc);
             } else {
                 this.openDocPreview(doc);
             }
