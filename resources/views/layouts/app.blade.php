@@ -56,8 +56,8 @@
         .map-container { width: 100%; height: 66vh; min-height: 500px; }
         .yougile-badge {
             position: absolute;
-            top: 8px;
-            right: 8px;
+            top: -3px;
+            left: -3px;
             width: 24px;
             height: 24px;
             border-radius: 50%;

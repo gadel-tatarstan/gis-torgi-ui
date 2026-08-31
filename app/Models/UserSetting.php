@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class UserSetting extends Model
 {
     protected $fillable = [
-        'user_id',        'yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id',
+        'user_id',        'yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id', 'days_to_keep_lots',
     ];
 
     protected $hidden = [

@@ -13,7 +13,7 @@
 
     <main class="max-w-3xl mx-auto px-4 py-8">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-6">Интеграция с YouGile</h2>
+            <h2 class="text-lg font-semibold text-gray-800 mb-6">Общие настройки</h2>
 
             <!-- Success Message -->
             <template x-if="success">
@@ -58,6 +58,15 @@
                     <p class="text-xs text-gray-400 mt-1">ID колонки, в которую будут добавляться задачи</p>
                 </div>
 
+                <hr class="my-6 border-gray-200">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Хранение лотов (дней)</label>
+                    <input type="number" min="1" max="365" x-model.number="form.days_to_keep_lots"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <p class="text-xs text-gray-400 mt-1">Лоты старше этого значения удаляются вместе с файлами</p>
+                </div>
+
                 <button @click="saveSettings()" :disabled="saving"
                         class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition mt-6">
                     <span x-show="!saving">Сохранить</span>
@@ -80,17 +89,19 @@ function settingsApp() {
                     yg_api_token: '',
                     yg_board_id: '',
                     yg_column_id: '',
+                    days_to_keep_lots: 20,
                 },
         saving: false,
         success: false,
         error: null,
 
         init() {
-            const setting = @js($setting->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id']));
+            const setting = @js($setting->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id', 'days_to_keep_lots']));
             this.form.yg_company_id = setting.yg_company_id || '';
             this.form.yg_api_token = setting.yg_api_token || '';
             this.form.yg_board_id = setting.yg_board_id || '';
             this.form.yg_column_id = setting.yg_column_id || '';
+            this.form.days_to_keep_lots = setting.days_to_keep_lots || 20;
         },
 
         async saveSettings() {

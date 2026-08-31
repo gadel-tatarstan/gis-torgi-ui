@@ -37,6 +37,7 @@ class Lot extends Model
         'etp_code',
         'etp_url',
         'estate_address',
+        'custom_address',
         'create_date',
         'notice_first_version_publication_date',
         'lot_vat_name',

@@ -55,6 +55,8 @@ class LotController extends Controller
                 $lot['is_not_interested'] = $existingLot->is_not_interested;
                 $lot['on_board'] = $existingLot->on_board;
                 $lot['comment'] = $existingLot->comment;
+                $lot['custom_address'] = $existingLot->custom_address;
+                $lot['market_price'] = $existingLot->market_price;
             }
         }
 
@@ -111,6 +113,20 @@ class LotController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function restoreInterested(Request $request): JsonResponse
+    {
+        $request->validate(['id' => 'required|string']);
+
+        $lot = Lot::find($request->input('id'));
+        if (! $lot) {
+            return response()->json(['error' => 'Лот не найден'], 404);
+        }
+
+        $lot->update(['is_not_interested' => false]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function markViewed(Request $request): JsonResponse
     {
         $request->validate(['id' => 'required|string']);
@@ -163,21 +179,30 @@ class LotController extends Controller
             'yg_api_token' => 'nullable|string',
             'yg_board_id' => 'nullable|string',
             'yg_column_id' => 'nullable|string',
+            'days_to_keep_lots' => 'nullable|integer|min:1|max:365',
         ]);
+
+        $data = $request->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id', 'days_to_keep_lots']);
 
         $setting = UserSetting::firstOrCreate(
             ['user_id' => auth()->id() ?? 1],
-            $request->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id'])
+            $data
         );
 
-        $setting->update($request->only(['yg_company_id', 'yg_api_token', 'yg_board_id', 'yg_column_id']));
+        $setting->update($data);
 
         return response()->json(['success' => true]);
     }
 
     public function addToYougile(Request $request): JsonResponse
     {
-        $request->validate(['id' => 'required|string']);
+        $request->validate([
+            'id' => 'required|string',
+            'center_lat' => 'nullable|numeric',
+            'center_lon' => 'nullable|numeric',
+            'mercator_x' => 'nullable|numeric',
+            'mercator_y' => 'nullable|numeric',
+        ]);
 
         $setting = UserSetting::where('user_id', auth()->id() ?? 1)->first();
 
@@ -191,17 +216,62 @@ class LotController extends Controller
         }
 
         $torgiUrl = 'https://torgi.gov.ru/new/public/lots/lot/'.urlencode($lot->id);
-        $title = ($lot->cadastral_number ?? 'Без номера').' | '.$torgiUrl;
+        $address = $lot->custom_address ?: ($lot->estate_address ?? '');
+        $title = ($lot->cadastral_number ?? 'Без номера').($address ? ' | '.$address : '').' | '.$torgiUrl;
         $idPrefix = 'GADEL_'.$lot->id;
 
         $deadlineTimestamp = null;
         if ($lot->bidd_end_time) {
             $deadlineTimestamp = $lot->bidd_end_time->timestamp * 1000;
         }
+        $centerLat = $request->input('center_lat');
+        $centerLon = $request->input('center_lon');
+        $mercatorX = $request->input('mercator_x');
+        $mercatorY = $request->input('mercator_y');
+
+        $description = '';
+
+        // Row 1: Авито, ЦИАН, ДомКлик
+        $links = [];
+        if ($address) {
+            $url = 'https://www.avito.ru/all/zemelnye_uchastki?q='.urlencode($address);
+            $links[] = '<a href="'.$url.'" target="_blank">Авито</a>';
+        }
+        if ($centerLat !== null && $centerLon !== null) {
+            $url = 'https://cian.ru/map/?center='.urlencode($centerLat.','.$centerLon).'&deal_type=sale&engine_version=2&object_type[0]=3&offer_type=suburban&zoom=15';
+            $links[] = '<a href="'.$url.'" target="_blank">ЦИАН</a>';
+            $swLat = $centerLat - 0.005;
+            $swLon = $centerLon - 0.015;
+            $neLat = $centerLat + 0.005;
+            $neLon = $centerLon + 0.015;
+            $url = 'https://domclick.ru/search/on-map?deal_type=sale&category=living&offer_type=lot&sw='.urlencode($swLat.','.$swLon).'&ne='.urlencode($neLat.','.$neLon);
+            $links[] = '<a href="'.$url.'" target="_blank">ДомКлик</a>';
+        }
+        if ($links) {
+            $description .= implode(' | ', $links);
+        }
+
+        // Row 2: Google Maps, Яндекс.Карты, НСПД
+        $links2 = [];
+        if ($centerLat !== null && $centerLon !== null) {
+            $links2[] = '<a href="https://www.google.com/maps?q='.$centerLat.','.$centerLon.'" target="_blank">Google Maps</a>';
+            $links2[] = '<a href="https://yandex.ru/maps/?ll='.$centerLon.'%2C'.$centerLat.'&z=17&l=sat%2Cskl" target="_blank">Яндекс.Карты</a>';
+        }
+        if ($mercatorX !== null && $mercatorY !== null) {
+            $url = 'https://nspd.gov.ru/cadastral-price/search?zoom=18&coordinate_x='.$mercatorX.'&coordinate_y='.$mercatorY.'&baseLayerId=36344';
+            $links2[] = '<a href="'.$url.'" target="_blank">НСПД</a>';
+        }
+        if ($links2) {
+            $description .= '<br>'.implode(' | ', $links2);
+        }
+
+        if ($lot->comment) {
+            $description .= '<br><br><strong>Комментарий:</strong><br>'.e($lot->comment);
+        }
 
         $payload = [
             'title' => $title,
-            'description' => $lot->lot_name."\n\nАдрес: ".($lot->estate_address ?? 'не указан'),
+            'description' => $description,
             'columnId' => $setting->yg_column_id,
             'idTaskCommon' => $idPrefix,
             'idTaskProject' => $idPrefix,
@@ -297,6 +367,23 @@ class LotController extends Controller
 
         $value = $request->input('market_price');
         $lot->update(['market_price' => $value !== null && $value !== '' ? $value : null]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function saveCustomAddress(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'custom_address' => 'nullable|string|max:500',
+        ]);
+
+        $lot = Lot::find($id);
+        if (! $lot) {
+            return response()->json(['error' => 'Лот не найден'], 404);
+        }
+
+        $value = $request->input('custom_address');
+        $lot->update(['custom_address' => $value !== null && trim($value) !== '' ? trim($value) : null]);
 
         return response()->json(['success' => true]);
     }

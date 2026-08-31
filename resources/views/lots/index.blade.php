@@ -118,8 +118,10 @@
 
                             <!-- Collapsed for not-interested -->
                             <div class="lot-card-collapsed hidden p-3 cursor-pointer">
-                                <p class="text-sm font-medium text-gray-400 truncate" x-text="lot.cadastral_number || 'Без номера'"></p>
-                                <p x-show="lot.comment" class="text-[10px] text-gray-400 leading-tight line-clamp-2 mt-0.5" x-text="lot.comment"></p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-sm font-medium text-gray-400 truncate shrink-0" x-text="lot.cadastral_number || 'Без номера'"></p>
+                                    <p x-show="lot.comment" class="text-[10px] text-gray-600 leading-tight line-clamp-1 truncate" x-text="lot.comment"></p>
+                                </div>
                             </div>
 
                             <!-- Full Content -->
@@ -272,10 +274,18 @@
                             </button>
                             <div x-show="openDropdown === 'header'" x-cloak
                                  class="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-                                <button @click="markNotInterested(selectedLot); closeLotModal(); openDropdown = null"
-                                        class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
-                                    <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
-                                </button>
+                                <template x-if="!selectedLot.is_not_interested">
+                                    <button @click="markNotInterested(selectedLot); closeLotModal(); openDropdown = null"
+                                            class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                        <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
+                                    </button>
+                                </template>
+                                <template x-if="selectedLot.is_not_interested">
+                                    <button @click="restoreInterested(selectedLot)"
+                                            class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                        <span class="material-icons-outlined text-sm">restore</span> Вернуть
+                                    </button>
+                                </template>
                                 <button @click="addToYougile(selectedLot); openDropdown = null"
                                         :disabled="selectedLot.on_board"
                                         :class="selectedLot.on_board ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-50'"
@@ -330,8 +340,21 @@
 
                             <div class="border-t border-gray-100 pt-2 space-y-1.5">
                                 <div class="flex items-start gap-2">
-                                    <span class="text-sm text-gray-500 min-w-[130px]">Адрес:</span>
-                                    <span class="text-sm text-gray-700" x-text="selectedLot.estate_address || '—'"></span>
+                                    <span class="text-sm text-gray-500 min-w-[130px] shrink-0">Адрес:</span>
+                                    <div class="flex items-center gap-1 flex-1 min-w-0">
+                                        <span class="text-sm text-gray-700 flex-1 min-w-0 outline-none"
+                                              contenteditable="true"
+                                              x-text="selectedLot.custom_address || selectedLot.estate_address || '—'"
+                                              @blur="saveCustomAddress($event.target.textContent)"
+                                              @keydown.enter.prevent="$event.target.blur()"
+                                              :title="selectedLot.custom_address ? 'Отредактировано вручную' : ''"></span>
+                                        <button x-show="selectedLot.custom_address"
+                                                @click="resetCustomAddress()"
+                                                class="shrink-0 p-0.5 text-gray-400 hover:text-gray-600 transition"
+                                                title="Вернуть оригинальный адрес">
+                                            <span class="material-icons-outlined text-sm">restart_alt</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Площадь:</span>
@@ -488,7 +511,7 @@
                             <div x-show="selectedLot.comment" class="flex items-start gap-2">
                                 <span class="material-icons-outlined text-sm text-gray-400 mt-0.5">comment</span>
                                 <p class="text-sm text-gray-700 flex-1 whitespace-pre-wrap" x-text="selectedLot.comment"></p>
-                                <button @click="editingComment = true; commentText = selectedLot.comment || ''" class="text-gray-400 hover:text-blue-500 shrink-0" title="Редактировать">
+                                <button @click="editingComment = true; commentText = selectedLot.comment || ''; $nextTick(() => $refs.commentTextarea.focus())" class="text-gray-400 hover:text-blue-500 shrink-0" title="Редактировать">
                                     <span class="material-icons-outlined text-sm">edit</span>
                                 </button>
                                 <button @click="saveComment('')" class="text-gray-400 hover:text-red-500 shrink-0" title="Удалить">
@@ -496,14 +519,14 @@
                                 </button>
                             </div>
                             <div x-show="!selectedLot.comment">
-                                <button @click="editingComment = true; commentText = ''" class="text-sm text-gray-400 hover:text-blue-600 flex items-center gap-1">
+                                <button @click="editingComment = true; commentText = ''; $nextTick(() => $refs.commentTextarea.focus())" class="text-sm text-gray-400 hover:text-blue-600 flex items-center gap-1">
                                     <span class="material-icons-outlined text-sm">add_comment</span>
                                     Добавить комментарий
                                 </button>
                             </div>
                         </div>
                         <div x-show="editingComment">
-                            <textarea x-model="commentText" rows="3" class="w-full text-sm border border-gray-300 rounded-lg p-2 resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Введите комментарий..."></textarea>
+                            <textarea x-ref="commentTextarea" x-model="commentText" rows="3" class="w-full text-sm border border-gray-300 rounded-lg p-2 resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Введите комментарий..." @keydown.enter.prevent="if(!$event.shiftKey) saveComment(commentText)"></textarea>
                             <div class="flex items-center gap-2 mt-2">
                                 <button @click="saveComment(commentText)" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">Сохранить</button>
                                 <button @click="editingComment = false" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">Отмена</button>
@@ -1006,11 +1029,32 @@ function lotApp() {
                 await fetch('/api/lots/not-interested', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
-                    body: JSON.stringify({ id: lot.id }),
+                    body: JSON.stringify({
+                        id: lot.id,
+                        center_lat: this.lotPolygon?.center_lat ?? null,
+                        center_lon: this.lotPolygon?.center_lon ?? null,
+                        mercator_x: this.lotPolygon?.mercator_x ?? null,
+                        mercator_y: this.lotPolygon?.mercator_y ?? null,
+                    }),
                 });
                 const idx = this.lots.findIndex(l => l.id === lot.id);
                 if (idx !== -1) this.lots[idx].is_not_interested = true;
                 if (this.selectedLot && this.selectedLot.id === lot.id) this.selectedLot.is_not_interested = true;
+            } catch (e) { console.error(e); }
+        },
+
+        async restoreInterested(lot) {
+            try {
+                await fetch('/api/lots/restore-interested', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                    body: JSON.stringify({ id: lot.id }),
+                });
+                const idx = this.lots.findIndex(l => l.id === lot.id);
+                if (idx !== -1) this.lots[idx].is_not_interested = false;
+                if (this.selectedLot && this.selectedLot.id === lot.id) this.selectedLot.is_not_interested = false;
+                this.closeLotModal();
+                this.openDropdown = null;
             } catch (e) { console.error(e); }
         },
 
@@ -1019,7 +1063,13 @@ function lotApp() {
                 const res = await fetch('/api/lots/add-to-yougile', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
-                    body: JSON.stringify({ id: lot.id }),
+                    body: JSON.stringify({
+                        id: lot.id,
+                        center_lat: this.lotPolygon?.center_lat ?? null,
+                        center_lon: this.lotPolygon?.center_lon ?? null,
+                        mercator_x: this.lotPolygon?.mercator_x ?? null,
+                        mercator_y: this.lotPolygon?.mercator_y ?? null,
+                    }),
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -1084,6 +1134,30 @@ function lotApp() {
             } catch (e) {
                 console.error(e);
             }
+        },
+
+        async saveCustomAddress(value) {
+            const addr = value && value.trim() ? value.trim() : null;
+            if ((this.selectedLot.custom_address || null) === addr) return;
+            try {
+                const res = await fetch(`/api/lots/${this.selectedLot.id}/custom-address`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    body: JSON.stringify({ custom_address: addr })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.selectedLot.custom_address = addr;
+                    const lotInList = this.lots.find(l => l.id === this.selectedLot.id);
+                    if (lotInList) lotInList.custom_address = addr;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        resetCustomAddress() {
+            this.saveCustomAddress(null);
         },
 
         pluralize(n, one, few, many) {
