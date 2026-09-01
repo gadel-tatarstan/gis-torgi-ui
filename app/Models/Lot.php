@@ -21,7 +21,6 @@ class Lot extends Model
         'bidd_form_code',
         'bidd_form_name',
         'lot_name',
-        'lot_description',
         'price_min',
         'price_min_exact',
         'price_step',
@@ -82,6 +81,16 @@ class Lot extends Model
     public function etp(): BelongsTo
     {
         return $this->belongsTo(Etp::class, 'etp_code', 'code');
+    }
+
+    public function permittedUseRelation(): BelongsTo
+    {
+        return $this->belongsTo(PermittedUse::class, 'permitted_use', 'code');
+    }
+
+    public function getPermittedUseNameAttribute(): ?string
+    {
+        return $this->permittedUseRelation?->name;
     }
 
     public function scopeNotOlderThanDays($query, int $days = 20): Builder

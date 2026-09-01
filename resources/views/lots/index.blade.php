@@ -165,7 +165,7 @@
                                     </span>
                                     <span class="inline-flex items-center gap-0.5">
                                         <span class="material-icons-outlined text-xs">category</span>
-                                        <span class="truncate" x-text="lot.permitted_use || '—'"></span>
+                                        <span class="truncate" x-text="lot.permitted_use_name || '—'"></span>
                                     </span>
                                     <span class="inline-flex items-center gap-0.5">
                                         <span class="material-icons-outlined text-xs">store</span>
@@ -362,7 +362,7 @@
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Использование:</span>
-                                    <span class="text-sm text-gray-700" x-text="selectedLot.permitted_use || '—'"></span>
+                                    <span class="text-sm text-gray-700" x-text="selectedLot.permitted_use_name || '—'"></span>
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-sm text-gray-500 min-w-[130px]">Тип торгов:</span>
@@ -410,10 +410,11 @@
                                         <img src="{{ asset('domclick-logo.svg') }}" class="h-5 w-auto" alt="ДомКлик">
                                     </a>
                                     <div class="flex items-center gap-1 ml-2">
-                                        <input type="number" min="0" step="1" inputmode="numeric"
-                                               :value="selectedLot.market_price || ''"
+                                        <input type="text" inputmode="numeric"
+                                               :value="selectedLot.market_price ? formatNumber(selectedLot.market_price) : ''"
+                                               @input="formatMarketPriceInput($event)"
                                                @blur="saveMarketPrice($event.target.value)"
-                                               class="w-28 text-sm text-gray-700 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                               class="w-32 text-sm text-gray-700 border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
                                                placeholder="Рын. цена">
                                         <span class="text-sm text-gray-500">руб.</span>
                                     </div>
@@ -1117,7 +1118,8 @@ function lotApp() {
         },
 
         async saveMarketPrice(value) {
-            const price = value ? parseFloat(value) : null;
+            const cleaned = (value || '').replace(/[^\d]/g, '');
+            const price = cleaned ? parseFloat(cleaned) : null;
             if (this.selectedLot.market_price === price) return;
             try {
                 const res = await fetch(`/api/lots/${this.selectedLot.id}/market-price`, {
@@ -1204,6 +1206,19 @@ function lotApp() {
                 window.open('https://torgi.gov.ru/new/image-preview/v1/' + doc.fileId + '?disposition=inline', '_blank');
             } else {
                 this.openDocPreview(doc);
+            }
+        },
+
+        formatNumber(num) {
+            return new Intl.NumberFormat('ru-RU').format(num);
+        },
+
+        formatMarketPriceInput(e) {
+            const raw = e.target.value.replace(/[^\d]/g, '');
+            if (raw) {
+                e.target.value = this.formatNumber(parseInt(raw, 10));
+            } else {
+                e.target.value = '';
             }
         },
 

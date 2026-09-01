@@ -58,6 +58,7 @@ class LotController extends Controller
                 $lot['custom_address'] = $existingLot->custom_address;
                 $lot['market_price'] = $existingLot->market_price;
             }
+            $lot['permitted_use_name'] = $existingLot?->permittedUseRelation?->name;
         }
 
         $result['etps'] = Etp::orderBy('order')->pluck('short_name', 'code')->toArray();
@@ -91,8 +92,11 @@ class LotController extends Controller
 
         $etp = Etp::where('code', $lot->etp_code)->first();
 
+        $lotArray = $lot->toArray();
+        $lotArray['permitted_use_name'] = $lot->permittedUseRelation?->name;
+
         return response()->json([
-            'lot' => $lot,
+            'lot' => $lotArray,
             'detail' => $detail,
             'polygon' => $polygon,
             'etp' => $etp,
@@ -307,8 +311,11 @@ class LotController extends Controller
             $stickers['f8003c33-0e55-49a5-80ba-140e811b305d'] = number_format($lot->area, 0, '', ' ').' м²';
         }
 
-        // ВРИ (жёсткое значение)
-        $stickers['7a610416-adb7-45b1-bc6e-93245eadc664'] = '02d939539770';
+        // ВРИ (по коду permitted_use)
+        $vriStickerId = self::resolveVriStickerId($lot->permitted_use);
+        if ($vriStickerId) {
+            $stickers['7a610416-adb7-45b1-bc6e-93245eadc664'] = $vriStickerId;
+        }
 
         // Рыночная цена — только если заполнена
         if ($lot->market_price) {
@@ -462,6 +469,42 @@ class LotController extends Controller
         $lot->update(['comment' => $request->input('comment')]);
 
         return response()->json(['success' => true, 'comment' => $lot->comment]);
+    }
+
+    private static function resolveVriStickerId(?string $permittedUseCode): ?string
+    {
+        if (! $permittedUseCode) {
+            return null;
+        }
+
+        $mapping = [[
+            'id' => '6688ee107fb1', 'name' => 'ЛПХ', 'code' => ['2.2'],
+        ], [
+            'id' => '02d939539770', 'name' => 'ИЖС', 'code' => ['2.1'],
+        ], [
+            'id' => '8c08be160fad', 'name' => 'С/Х', 'code' => ['1.0'],
+        ], [
+            'id' => '558880a5028d', 'name' => 'САДОВОДСТВО', 'code' => ['1.5', '13.2'],
+        ], [
+            'id' => '827c8bd4e087', 'name' => 'КОММЕРЦИЯ', 'code' => ['4.x', '6.x'],
+        ], [
+            'id' => '1c1485cafc1c', 'name' => 'БЕЗ ПОСТРОЙКИ ОГОРОД', 'code' => ['13.1'],
+        ]];
+
+        foreach ($mapping as $entry) {
+            foreach ($entry['code'] as $pattern) {
+                if (str_ends_with($pattern, '.x')) {
+                    $prefix = substr($pattern, 0, -2);
+                    if (str_starts_with($permittedUseCode, $prefix.'.')) {
+                        return $entry['id'];
+                    }
+                } elseif ($permittedUseCode === $pattern) {
+                    return $entry['id'];
+                }
+            }
+        }
+
+        return null;
     }
 
     private static function formatPrice(float $value): string

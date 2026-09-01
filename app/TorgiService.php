@@ -117,8 +117,8 @@ class TorgiService
         $areaUnit = null;
 
         foreach ($characteristics as $char) {
-            if ($char['code'] === 'PermittedUse' && isset($char['characteristicValue'][0]['name'])) {
-                $permittedUse = $char['characteristicValue'][0]['name'];
+            if ($char['code'] === 'PermittedUse' && isset($char['characteristicValue'][0]['code'])) {
+                $permittedUse = $char['characteristicValue'][0]['code'];
             } elseif ($char['code'] === 'CadastralNumber') {
                 $cadastralNumber = $char['characteristicValue'] ?? null;
             } elseif ($char['code'] === 'SquareZU') {
@@ -134,7 +134,7 @@ class TorgiService
             'bidd_form_code' => $data['biddForm']['code'] ?? null,
             'bidd_form_name' => $data['biddForm']['name'] ?? null,
             'lot_name' => $data['lotName'] ?? '',
-            'lot_description' => $data['lotDescription'] ?? null,
+
             'price_min' => $data['priceMin'] ?? 0,
             'price_min_exact' => $data['priceMinExact'] ?? null,
             'lot_images' => $data['lotImages'] ?? [],
