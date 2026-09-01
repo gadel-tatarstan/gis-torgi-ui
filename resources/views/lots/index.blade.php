@@ -112,7 +112,7 @@
                 <div class="space-y-2" :class="{ 'pointer-events-none opacity-60': loadingPage }">
                     <template x-for="lot in lots" :key="lot.id">
                         <div class="border border-gray-200 rounded-lg bg-white hover:shadow-md transition-all min-w-0 relative"
-                             :class="{ 'lot-card-faded': lot.is_not_interested }"
+                             :class="{ 'lot-card-faded': lot.is_not_interested, 'lot-card-on-board': lot.on_board }"
                              @mousedown="_mdX = $event.clientX; _mdY = $event.clientY"
                              @click="if (Math.abs($event.clientX - _mdX) < 5 && Math.abs($event.clientY - _mdY) < 5) openLotModal(lot)">
 
@@ -394,7 +394,7 @@
                                     <span class="text-sm text-gray-700" x-text="selectedLot.auction_start_date ? formatDate(selectedLot.auction_start_date) : '—'"></span>
                                 </div>
                                 <div x-show="selectedLot.estate_address || (lotPolygon && lotPolygon.center_lat && lotPolygon.center_lon)" class="flex items-center gap-3">
-                                    <a x-show="selectedLot.estate_address" :href="'https://www.avito.ru/all/zemelnye_uchastki?q=' + encodeURIComponent(selectedLot.estate_address)"
+                                    <a x-show="selectedLot.estate_address" :href="'https://www.avito.ru/all/zemelnye_uchastki?q=' + encodeURIComponent(selectedLot.custom_address || selectedLot.estate_address)"
                                        target="_blank" rel="noopener"
                                        class="text-gray-400 hover:text-gray-600 transition">
                                         <img src="{{ asset('Avito_logo.svg') }}" class="w-14 h-14" alt="Avito">

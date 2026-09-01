@@ -29,6 +29,14 @@
             -webkit-backdrop-filter: blur(4px);
         }
         .countdown-expired { color: #ef4444; }
+        .lot-card-on-board {
+            border: 1px solid #62bdff !important;
+            background-color: #e0f0ff !important;
+            opacity: 1 !important;
+            filter: none !important;
+        }
+        .lot-card-on-board .lot-card-content { display: flex !important; }
+        .lot-card-on-board .lot-card-collapsed { display: none !important; }
         .lot-card-faded {
             opacity: 0.4;
             filter: grayscale(100%);
@@ -74,6 +82,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        aside.flex.h-full.w-\[25rem\].min-w-\[25rem\].flex-col.bg-neutral-0 {
+            display: none;
         }
     </style>
     @stack('styles')

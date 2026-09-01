@@ -231,12 +231,8 @@ class LotController extends Controller
 
         $description = '';
 
-        // Row 1: Авито, ЦИАН, ДомКлик
+        // Row 1: ЦИАН, ДомКлик
         $links = [];
-        if ($address) {
-            $url = 'https://www.avito.ru/all/zemelnye_uchastki?q='.urlencode($address);
-            $links[] = '<a href="'.$url.'" target="_blank">Авито</a>';
-        }
         if ($centerLat !== null && $centerLon !== null) {
             $url = 'https://cian.ru/map/?center='.urlencode($centerLat.','.$centerLon).'&deal_type=sale&engine_version=2&object_type[0]=3&offer_type=suburban&zoom=15';
             $links[] = '<a href="'.$url.'" target="_blank">ЦИАН</a>';
