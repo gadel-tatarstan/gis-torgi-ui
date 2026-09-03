@@ -210,12 +210,18 @@
                                                     class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
                                                 <span class="material-icons-outlined text-sm">visibility_off</span> Не интересно
                                             </button>
-                                            <button @click="addToYougile(lot); openDropdownId = null"
-                                                    :disabled="lot.on_board"
-                                                    :class="lot.on_board ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-50'"
-                                                    class="w-full text-left px-3 py-2 text-sm flex items-center gap-2">
-                                                <span class="material-icons-outlined text-sm">dashboard</span> На доску
-                                            </button>
+                                            <template x-if="!lot.on_board">
+                                                <button @click="addToYougile(lot); openDropdownId = null"
+                                                        class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                                    <span class="material-icons-outlined text-sm">dashboard</span> На доску
+                                                </button>
+                                            </template>
+                                            <template x-if="lot.on_board">
+                                                <button @click="removeFromYougile(lot); openDropdownId = null"
+                                                        class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                                    <span class="material-icons-outlined text-sm">link_off</span> Убрать с доски
+                                                </button>
+                                            </template>
                                         </div>
                                     </div>
                                 </div>
@@ -286,12 +292,18 @@
                                         <span class="material-icons-outlined text-sm">restore</span> Вернуть
                                     </button>
                                 </template>
-                                <button @click="addToYougile(selectedLot); openDropdown = null"
-                                        :disabled="selectedLot.on_board"
-                                        :class="selectedLot.on_board ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-50'"
-                                        class="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2">
-                                    <span class="material-icons-outlined text-sm">dashboard</span> На доску
-                                </button>
+                                <template x-if="!selectedLot.on_board">
+                                    <button @click="addToYougile(selectedLot); openDropdown = null"
+                                            class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                        <span class="material-icons-outlined text-sm">dashboard</span> На доску
+                                    </button>
+                                </template>
+                                <template x-if="selectedLot.on_board">
+                                    <button @click="removeFromYougile(selectedLot); openDropdown = null"
+                                            class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2">
+                                        <span class="material-icons-outlined text-sm">link_off</span> Убрать с доски
+                                    </button>
+                                </template>
                             </div>
                         </div>
                         <button @click="closeLotModal()" class="p-1.5 hover:bg-gray-100 rounded-lg">
@@ -1057,6 +1069,26 @@ function lotApp() {
                     const idx = this.lots.findIndex(l => l.id === lot.id);
                     if (idx !== -1) this.lots[idx].on_board = true;
                     if (this.selectedLot && this.selectedLot.id === lot.id) this.selectedLot.on_board = true;
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            } catch (e) { console.error(e); alert('Ошибка подключения'); }
+        },
+
+        async removeFromYougile(lot) {
+            const lotLabel = lot.cadastral_number || lot.lot_name || lot.id;
+            if (! confirm('Убрать «' + lotLabel + '» с доски YouGile? Карточка на доске будет удалена.')) return;
+            try {
+                const res = await fetch('/api/lots/remove-from-yougile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                    body: JSON.stringify({ id: lot.id }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const idx = this.lots.findIndex(l => l.id === lot.id);
+                    if (idx !== -1) this.lots[idx].on_board = false;
+                    if (this.selectedLot && this.selectedLot.id === lot.id) this.selectedLot.on_board = false;
                 } else if (data.error) {
                     alert(data.error);
                 }

@@ -275,7 +275,6 @@ class LotController extends Controller
             'columnId' => $setting->yg_column_id,
             'idTaskCommon' => $idPrefix,
             'idTaskProject' => $idPrefix,
-            'idempotencyKey' => $idPrefix,
         ];
 
         if ($deadlineTimestamp) {
@@ -353,6 +352,54 @@ class LotController extends Controller
 
         return response()->json([
             'error' => 'Ошибка создания карточки в YouGile',
+            'details' => $ygResponse->json('message', $ygResponse->body()),
+        ], 500);
+    }
+
+    public function removeFromYougile(Request $request): JsonResponse
+    {
+        $request->validate(['id' => 'required|string']);
+
+        $setting = UserSetting::where('user_id', auth()->id() ?? 1)->first();
+
+        if (! $setting || ! $setting->yg_api_token) {
+            return response()->json(['error' => 'Настройки YouGile не заполнены (токен обязателен)'], 400);
+        }
+
+        $lot = Lot::find($request->input('id'));
+        if (! $lot) {
+            return response()->json(['error' => 'Лот не найден'], 404);
+        }
+
+        if (! $lot->on_board || ! $lot->yg_task_id) {
+            return response()->json(['error' => 'Лот не находится на доске'], 422);
+        }
+
+        $ygResponse = Http::withHeaders([
+            'Authorization' => 'Bearer '.$setting->yg_api_token,
+            'Content-Type' => 'application/json',
+        ])->put('https://ru.yougile.com/api-v2/tasks/'.$lot->yg_task_id, [
+            'deleted' => true,
+        ]);
+
+        if ($ygResponse->successful()) {
+            $lot->update([
+                'on_board' => false,
+                'yg_task_id' => null,
+            ]);
+
+            return response()->json(['success' => true]);
+        }
+
+        Log::error('YouGile API error', [
+            'lot_id' => $lot->id,
+            'yg_task_id' => $lot->yg_task_id,
+            'status' => $ygResponse->status(),
+            'response' => $ygResponse->body(),
+        ]);
+
+        return response()->json([
+            'error' => 'Ошибка удаления карточки в YouGile',
             'details' => $ygResponse->json('message', $ygResponse->body()),
         ], 500);
     }

@@ -12,6 +12,7 @@ Route::post('/api/lots/restore-interested', [LotController::class, 'restoreInter
 Route::post('/api/lots/viewed', [LotController::class, 'markViewed'])->name('lots.viewed');
 Route::get('/api/polygon', [LotController::class, 'fetchPolygon'])->name('lots.polygon');
 Route::post('/api/lots/add-to-yougile', [LotController::class, 'addToYougile'])->name('lots.add-to-yougile');
+Route::post('/api/lots/remove-from-yougile', [LotController::class, 'removeFromYougile'])->name('lots.remove-from-yougile');
 Route::put('/api/lots/{id}/comment', [LotController::class, 'saveComment'])->name('lots.save-comment');
 Route::put('/api/lots/{id}/market-price', [LotController::class, 'saveMarketPrice'])->name('lots.save-market-price');
 Route::put('/api/lots/{id}/custom-address', [LotController::class, 'saveCustomAddress'])->name('lots.save-custom-address');
