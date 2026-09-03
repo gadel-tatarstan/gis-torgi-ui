@@ -508,30 +508,14 @@
 
                     <!-- Comment Section -->
                     <div class="px-4 pb-5 pt-5 border-t border-gray-100">
-                        <div x-show="!editingComment">
-                            <div x-show="selectedLot.comment" class="flex items-start gap-2">
-                                <span class="material-icons-outlined text-sm text-gray-400 mt-0.5">comment</span>
-                                <p class="text-sm text-gray-700 flex-1 whitespace-pre-wrap" x-text="selectedLot.comment"></p>
-                                <button @click="editingComment = true; commentText = selectedLot.comment || ''; $nextTick(() => $refs.commentTextarea.focus())" class="text-gray-400 hover:text-blue-500 shrink-0" title="Редактировать">
-                                    <span class="material-icons-outlined text-sm">edit</span>
-                                </button>
-                                <button @click="saveComment('')" class="text-gray-400 hover:text-red-500 shrink-0" title="Удалить">
-                                    <span class="material-icons-outlined text-sm">delete</span>
-                                </button>
-                            </div>
-                            <div x-show="!selectedLot.comment">
-                                <button @click="editingComment = true; commentText = ''; $nextTick(() => $refs.commentTextarea.focus())" class="text-sm text-gray-400 hover:text-blue-600 flex items-center gap-1">
-                                    <span class="material-icons-outlined text-sm">add_comment</span>
-                                    Добавить комментарий
-                                </button>
-                            </div>
-                        </div>
-                        <div x-show="editingComment">
-                            <textarea x-ref="commentTextarea" x-model="commentText" rows="3" class="w-full text-sm border border-gray-300 rounded-lg p-2 resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" placeholder="Введите комментарий..." @keydown.enter.prevent="if(!$event.shiftKey) saveComment(commentText)"></textarea>
-                            <div class="flex items-center gap-2 mt-2">
-                                <button @click="saveComment(commentText)" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">Сохранить</button>
-                                <button @click="editingComment = false" class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">Отмена</button>
-                            </div>
+                        <div class="flex items-start gap-2">
+                            <span class="material-icons-outlined text-sm text-gray-400 mt-0.5">comment</span>
+                            <span class="text-sm text-gray-700 flex-1 min-w-0 outline-none whitespace-pre-wrap min-h-[1.25rem]"
+                                  contenteditable="true"
+                                  x-text="selectedLot.comment || ''"
+                                  @blur="saveComment($event.target.textContent)"
+                                  @keydown.enter.prevent="if(!$event.shiftKey) $event.target.blur()"
+                                  :data-placeholder="!selectedLot.comment ? 'Добавить комментарий...' : ''"></span>
                         </div>
                     </div>
                 </div>
@@ -598,8 +582,6 @@ function lotApp() {
         previewDoc: null,
         previewImageUrl: null,
         previewImageName: '',
-        editingComment: false,
-        commentText: '',
         openDropdownId: null,
         countdownIntervals: {},
         terrainMap: null,
@@ -682,8 +664,6 @@ function lotApp() {
             this.activeTab = 'google';
             this.lotPolygon = null;
             this.mapsInitialized = false;
-            this.editingComment = false;
-            this.commentText = '';
 
             try {
                 const res = await fetch(`/api/lots/${lot.id}/detail`);
@@ -1098,17 +1078,18 @@ function lotApp() {
             this.previewImageName = '';
         },
 
-        async saveComment(comment) {
+        async saveComment(value) {
+            const trimmed = (value || '').trim() || null;
+            if ((this.selectedLot.comment || null) === trimmed) return;
             try {
                 const res = await fetch(`/api/lots/${this.selectedLot.id}/comment`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                    body: JSON.stringify({ comment: comment || null })
+                    body: JSON.stringify({ comment: trimmed })
                 });
                 const data = await res.json();
                 if (data.success) {
                     this.selectedLot.comment = data.comment;
-                    this.editingComment = false;
                     const lotInList = this.lots.find(l => l.id === this.selectedLot.id);
                     if (lotInList) lotInList.comment = data.comment;
                 }

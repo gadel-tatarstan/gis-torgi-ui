@@ -29,6 +29,11 @@
             -webkit-backdrop-filter: blur(4px);
         }
         .countdown-expired { color: #ef4444; }
+        [contenteditable]:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+        }
         .lot-card-on-board {
             border: 1px solid #62bdff !important;
             background-color: #e0f0ff !important;
